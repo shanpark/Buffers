@@ -2,13 +2,15 @@ package io.github.shanpark.buffers
 
 import io.github.shanpark.buffers.exception.BufferException
 import io.github.shanpark.buffers.exception.UnderflowException
-import java.lang.Double.doubleToLongBits
-import java.lang.Double.longBitsToDouble
 import java.lang.Float.floatToIntBits
 import java.lang.Float.intBitsToFloat
+import java.lang.Double.doubleToLongBits
+import java.lang.Double.longBitsToDouble
 import kotlin.math.max
+import kotlin.math.min
 
-class Buffer(initialCapacity: Int = 1024) {
+class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable, Clearable {
+
     private val blocks = mutableListOf<ByteArray>()
     private var rBlock: Int = 0
     private var wBlock: Int = 0
@@ -28,7 +30,7 @@ class Buffer(initialCapacity: Int = 1024) {
      *
      * @return reaa()가 반환할 데이터가 있으면 true, 반환할 데이터가 없으면 false.
      */
-    fun isReadable(): Boolean = (rBlock < wBlock) || (rIndex < wIndex)
+    override fun isReadable(): Boolean = (rBlock < wBlock) || (rIndex < wIndex)
 
     /**
      * 현재 버퍼에 write할 수 있는 데이터 공간의 크기(byte 단위)를 얻어온다.
@@ -37,7 +39,7 @@ class Buffer(initialCapacity: Int = 1024) {
      *
      * @return write할 수 있는 공간의 크기(byte 단위)를 반환.
      */
-    fun readableBytes(): Int {
+    override fun readableBytes(): Int {
         return when (wBlock - rBlock) {
             0 -> wIndex - rIndex
             1 -> (blocks[rBlock].size - rIndex) + wIndex
@@ -54,7 +56,7 @@ class Buffer(initialCapacity: Int = 1024) {
      *
      * @return write할 수 있는 공간의 크기(byte 단위)를 반환.
      */
-    fun writableBytes(): Int {
+    override fun writableBytes(): Int {
         allocBufferIfNeeded()
         return blocks[wBlock].size - wIndex
     }
@@ -66,7 +68,7 @@ class Buffer(initialCapacity: Int = 1024) {
      *
      * @return 버퍼에서 읽은 (1 byte)값. 비어있으면 -1.
      */
-    fun read(): Int {
+    override fun read(): Int {
         return if (isReadable()) {
             if (blocks[rBlock].size == rIndex) {
                 rBlock++
@@ -88,7 +90,7 @@ class Buffer(initialCapacity: Int = 1024) {
      *
      * @return 실제 읽혀진 byte 수.
      */
-    fun read(buf: ByteArray): Int = read(buf, 0, buf.size)
+    override fun read(buf: ByteArray): Int = read(buf, 0, buf.size)
 
     /**
      * 파라미터로 전달된 ByteArray에 데이터를 읽어들인다.
@@ -105,7 +107,7 @@ class Buffer(initialCapacity: Int = 1024) {
      * @throws IndexOutOfBoundsException - If offset is negative, length is negative, or length is greater
      *                                     than buf.size - offset
      */
-    fun read(buf: ByteArray, offset: Int, length: Int): Int {
+    override fun read(buf: ByteArray, offset: Int, length: Int): Int {
         return if (offset >= 0 && length >= 0 && length <= buf.size - offset) {
             if (length == 0) {
                 0
@@ -139,7 +141,7 @@ class Buffer(initialCapacity: Int = 1024) {
      * 버퍼에 1 byte의 데이터를 write한다.
      * 현재 write가 가능한 공간이 없다면 추가로 공간을 할당한 후 write를 수행한다.
      */
-    fun write(data: Int) {
+    override fun write(data: Int) {
         allocBufferIfNeeded()
         blocks[wBlock][wIndex++] = data.toByte()
     }
@@ -151,7 +153,7 @@ class Buffer(initialCapacity: Int = 1024) {
      *
      * @return 버퍼에 실제 write가 된 byte 수.
      */
-    fun write(buf: ByteArray) = write(buf, 0, buf.size)
+    override fun write(buf: ByteArray) = write(buf, 0, buf.size)
 
     /**
      * 파라미터로 전달된 buf의 offset부터 length 만큼의 데이터를 버퍼에 write한다.
@@ -165,7 +167,7 @@ class Buffer(initialCapacity: Int = 1024) {
      * @throws IndexOutOfBoundsException If offset is negative, or length is negative, or offset+length is greater than
      *                                   the size of the array buf, then an IndexOutOfBoundsException is thrown.
      */
-    fun write(buf: ByteArray, offset: Int, length: Int) {
+    override fun write(buf: ByteArray, offset: Int, length: Int) {
         if (offset >= 0 && offset <= buf.size && length >= 0 && offset + length <= buf.size && offset + length >= 0) {
             if (length != 0) {
                 for (inx in 0 until length) {
@@ -184,7 +186,7 @@ class Buffer(initialCapacity: Int = 1024) {
      *
      * @throws UnderflowException 버퍼가 비어있으면 발생
      */
-    fun readByte(): Byte {
+    override fun readByte(): Byte {
         return if (isReadable())
             read().toByte()
         else
@@ -198,7 +200,7 @@ class Buffer(initialCapacity: Int = 1024) {
      *
      * @throws UnderflowException 버퍼의 데이터가 2 byte 보다 적게 남아있으면 발생
      */
-    fun readShort(): Short {
+    override fun readShort(): Short {
         return if (readableBytes() >= 2)
             read().shl(8).or(read()).toShort()
         else
@@ -212,7 +214,7 @@ class Buffer(initialCapacity: Int = 1024) {
      *
      * @throws UnderflowException 버퍼의 데이터가 4 byte 보다 적게 남아있으면 발생
      */
-    fun readInt(): Int {
+    override fun readInt(): Int {
         return if (readableBytes() >= 4)
             read().shl(8).or(read()).shl(8).or(read()).shl(8).or(read())
         else
@@ -226,7 +228,7 @@ class Buffer(initialCapacity: Int = 1024) {
      *
      * @throws UnderflowException 버퍼의 데이터가 8 byte 보다 적게 남아있으면 발생
      */
-    fun readLong(): Long {
+    override fun readLong(): Long {
         return if (readableBytes() >= 8)
             readInt().toLong().shl(32).or(readInt().toLong().and(0xffffffff))
         else
@@ -240,7 +242,7 @@ class Buffer(initialCapacity: Int = 1024) {
      *
      * @throws UnderflowException 버퍼의 데이터가 4 byte 보다 적게 남아있으면 발생
      */
-    fun readFloat(): Float {
+    override fun readFloat(): Float {
         return if (readableBytes() >= 4)
             intBitsToFloat(readInt())
         else
@@ -254,7 +256,7 @@ class Buffer(initialCapacity: Int = 1024) {
      *
      * @throws UnderflowException 버퍼의 데이터가 8 byte 보다 적게 남아있으면 발생
      */
-    fun readDouble(): Double {
+    override fun readDouble(): Double {
         return if (readableBytes() >= 8)
             longBitsToDouble(readLong())
         else
@@ -262,14 +264,70 @@ class Buffer(initialCapacity: Int = 1024) {
     }
 
     /**
+     * 버퍼에서 2 byte를 읽어서 Char형으로 만들어 반환한다.
+     *
+     * @return 버퍼로부터 읽은 2 byte의 데이터로 만들어진 Char 값.
+     *
+     * @throws UnderflowException 버퍼의 데이터가 2 byte 보다 적게 남아있으면 발생
+     */
+    override fun readChar(): Char {
+        return if (readableBytes() >= 2)
+            readShort().toInt().toChar()
+        else
+            throw UnderflowException()
+    }
+
+    /**
+     * 버퍼에서 1 byte를 읽어서 unsigned로 해석했을 때 값을 Short형으로 반환한다.
+     *
+     * @return 버퍼로부터 읽은 1 byte의 데이터를 unsigned로 해석했을 때 Short값.
+     *
+     * @throws UnderflowException 버퍼가 비어있으면 발생
+     */
+    override fun readUByte(): Short {
+        return if (isReadable())
+            read().toShort()
+        else
+            throw UnderflowException()
+    }
+
+    /**
+     * 버퍼에서 2 byte를 읽어서 unsigned로 해석했을 때 값을 Int형으로 반환한다.
+     *
+     * @return 버퍼로부터 읽은 2 byte의 데이터를 unsigned로 해석했을 때 Int값.
+     *
+     * @throws UnderflowException 버퍼의 데이터가 2 byte 보다 적게 남아있으면 발생
+     */
+    override fun readUShort(): Int {
+        return if (readableBytes() >= 2)
+            readShort().toInt().and(0xffff)
+        else
+            throw UnderflowException()
+    }
+
+    /**
+     * 버퍼에서 4 byte를 읽어서 unsigned로 해석했을 때 값을 Long형으로 반환한다.
+     *
+     * @return 버퍼로부터 읽은 4 byte의 데이터를 unsigned로 해석했을 때 Long값.
+     *
+     * @throws UnderflowException 버퍼의 데이터가 4 byte 보다 적게 남아있으면 발생
+     */
+    override fun readUInt(): Long {
+        return if (readableBytes() >= 4)
+            readInt().toLong().and(0xffffffff)
+        else
+            throw UnderflowException()
+    }
+
+    /**
      * 버퍼에 Byte 값을 write한다.
      */
-    fun writeByte(value: Byte) = write(value.toInt())
+    override fun writeByte(value: Byte) = write(value.toInt())
 
     /**
      * 버퍼에 Short 값을 write한다.
      */
-    fun writeShort(value: Short) {
+    override fun writeShort(value: Short) {
         val i = value.toInt()
         write(i.shr(8))
         write(i)
@@ -278,7 +336,7 @@ class Buffer(initialCapacity: Int = 1024) {
     /**
      * 버퍼에 Int 값을 write한다.
      */
-    fun writeInt(value: Int) {
+    override fun writeInt(value: Int) {
         write(value.shr(24))
         write(value.shr(16))
         write(value.shr(8))
@@ -288,7 +346,7 @@ class Buffer(initialCapacity: Int = 1024) {
     /**
      * 버퍼에 Long 값을 write한다.
      */
-    fun writeLong(value: Long) {
+    override fun writeLong(value: Long) {
         writeInt(value.shr(32).toInt())
         writeInt(value.toInt()) // least significant 32 bit wil be used.
     }
@@ -296,12 +354,17 @@ class Buffer(initialCapacity: Int = 1024) {
     /**
      * 버퍼에 Float 값을 write한다.
      */
-    fun writeFloat(value: Float) = writeInt(floatToIntBits(value))
+    override fun writeFloat(value: Float) = writeInt(floatToIntBits(value))
 
     /**
      * 버퍼에 Double 값을 write한다.
      */
-    fun writeDouble(value: Double) = writeLong(doubleToLongBits(value))
+    override fun writeDouble(value: Double) = writeLong(doubleToLongBits(value))
+
+    /**
+     * 버퍼에 Char 값을 write한다.
+     */
+    override fun writeChar(value: Char) = writeShort(value.code.toShort())
 
     /**
      * 현재 read position을 임시로 저장한다.
@@ -310,7 +373,7 @@ class Buffer(initialCapacity: Int = 1024) {
      *
      * compact(), clear() 등의 메소드를 호출하면 저장된 상태도 모두 무효화된다.
      */
-    fun mark() {
+    override fun mark() {
         saveMark()
     }
 
@@ -318,37 +381,9 @@ class Buffer(initialCapacity: Int = 1024) {
      * mark()를 호출하여 저장했던 상태로 돌아간다.
      * 저장된 상태가 없으면 아무 일도 하지 않는다.
      */
-    fun reset() {
+    override fun reset() {
         if (isMarkValid())
             loadMark()
-    }
-
-    /**
-     * 사용이 끝난 내부 버퍼들을 정리한다.
-     * mark()를 호출하여 저장된 상태는 모두 invalidate 된다.
-     */
-    fun compact() {
-        while (rBlock > 0) {
-            blocks.removeFirst()
-            rBlock--
-            wBlock--
-        }
-
-        invalidateMark()
-    }
-
-    /**
-     * 버퍼의 모든 데이터를 삭제하고 처음 상태로 되돌린다.
-     */
-    fun clear() {
-        while (blocks.size > 1)
-            blocks.removeLast()
-        rBlock = 0
-        wBlock = 0
-        rIndex = 0
-        wIndex = 0
-
-        invalidateMark()
     }
 
     /**
@@ -360,7 +395,7 @@ class Buffer(initialCapacity: Int = 1024) {
      *
      * @return read를 위해서 사용할 수 있는 ByteArray를 반환.
      */
-    fun rArray(): ByteArray {
+    override fun rArray(): ByteArray {
         return blocks[rBlock]
     }
 
@@ -369,7 +404,7 @@ class Buffer(initialCapacity: Int = 1024) {
      *
      * @return rArray()가 반환하는 ByteArray의 readable 공간의 시작 offset.
      */
-    fun rOffset(): Int {
+    override fun rOffset(): Int {
         return rIndex
     }
 
@@ -380,7 +415,7 @@ class Buffer(initialCapacity: Int = 1024) {
      *
      * @return write를 위해서 사용할 수 있는 ByteArray를 반환.
      */
-    fun wArray(): ByteArray {
+    override fun wArray(): ByteArray {
         allocBufferIfNeeded()
         return blocks[wBlock]
     }
@@ -391,9 +426,40 @@ class Buffer(initialCapacity: Int = 1024) {
      *
      * @return wArray()가 반환하는 ByteArray의 writable 공간의 시작 offset.
      */
-    fun wOffset(): Int {
+    override fun wOffset(): Int {
         allocBufferIfNeeded()
         return wIndex
+    }
+
+    /**
+     * 사용이 끝난 내부 버퍼들을 정리한다.
+     * mark()를 호출하여 저장된 상태는 모두 invalidate 된다.
+     * 이 버퍼에 의해서 생성된 다른 버퍼나 stream들도 모두 invalidate되며 이러한 객체들의 사용은 사용자의 책임이다.
+     */
+    override fun compact() {
+        while (rBlock > 0) {
+            blocks.removeFirst()
+            rBlock--
+            wBlock--
+        }
+
+        invalidateMark()
+    }
+
+    /**
+     * 버퍼의 모든 데이터를 삭제하고 처음 상태로 되돌린다.
+     * mark()를 호출해서 저장된 상태는 물론이고 이 버퍼에 의해서 생성된 다른 버퍼나 stream들도 모두 invalidate되며 이러한 객체들의
+     * 사용은 사용자의 책임이다.
+     */
+    override fun clear() {
+        while (blocks.size > 1)
+            blocks.removeLast()
+        rBlock = 0
+        wBlock = 0
+        rIndex = 0
+        wIndex = 0
+
+        invalidateMark()
     }
 
     /**
@@ -437,5 +503,194 @@ class Buffer(initialCapacity: Int = 1024) {
             wBlock = blocks.size - 1
             wIndex = 0
         }
+    }
+}
+
+internal class Slice(private val blocks: List<ByteArray>, private var rBlock: Int, private var rIndex: Int, sliceLength: Int): ReadBuffer {
+    private var wBlock: Int = rBlock
+    private var wIndex: Int = rIndex
+
+    private var markedBlock: Int = -1
+    private var markedIndex: Int = -1
+
+    init {
+        var length = sliceLength
+        while (length > 0) {
+            val rest = blocks[wBlock].size - wIndex
+            val len = min(length, rest)
+            length -= len
+            if (length > 0) {
+                wBlock++
+                wIndex = 0
+            } else {
+                wIndex += len
+            }
+        }
+    }
+
+    override fun isReadable(): Boolean = (rBlock < wBlock) || (rIndex < wIndex)
+
+    override fun readableBytes(): Int {
+        return when (wBlock - rBlock) {
+            0 -> wIndex - rIndex
+            1 -> (blocks[rBlock].size - rIndex) + wIndex
+            else -> {
+                (blocks[rBlock].size - rIndex) + ((wBlock - rBlock - 1) * blocks[rBlock].size) + wIndex
+            }
+        }
+    }
+
+    override fun read(): Int {
+        return if (isReadable()) {
+            if (blocks[rBlock].size == rIndex) {
+                rBlock++
+                rIndex = 0
+            }
+            blocks[rBlock][rIndex++].toInt().and(0xff)
+        } else {
+            return -1
+        }
+    }
+
+    override fun read(buf: ByteArray): Int = read(buf, 0, buf.size)
+
+    override fun read(buf: ByteArray, offset: Int, length: Int): Int {
+        return if (offset >= 0 && length >= 0 && length <= buf.size - offset) {
+            if (length == 0) {
+                0
+            } else {
+                var by = this.read()
+                if (by == -1) {
+                    -1
+                } else {
+                    buf[offset] = by.toByte()
+                    var written = 1
+                    try {
+                        while (written < length) {
+                            by = this.read()
+                            if (by == -1) {
+                                break
+                            }
+                            buf[offset + written] = by.toByte()
+                            ++written
+                        }
+                    } catch (e: BufferException) {
+                    }
+                    written
+                }
+            }
+        } else {
+            throw IndexOutOfBoundsException()
+        }
+    }
+
+    override fun readByte(): Byte {
+        return if (isReadable())
+            read().toByte()
+        else
+            throw UnderflowException()
+    }
+
+    override fun readShort(): Short {
+        return if (readableBytes() >= 2)
+            read().shl(8).or(read()).toShort()
+        else
+            throw UnderflowException()
+    }
+
+    override fun readInt(): Int {
+        return if (readableBytes() >= 4)
+            read().shl(8).or(read()).shl(8).or(read()).shl(8).or(read())
+        else
+            throw UnderflowException()
+    }
+
+    override fun readLong(): Long {
+        return if (readableBytes() >= 8)
+            readInt().toLong().shl(32).or(readInt().toLong().and(0xffffffff))
+        else
+            throw UnderflowException()
+    }
+
+    override fun readFloat(): Float {
+        return if (readableBytes() >= 4)
+            intBitsToFloat(readInt())
+        else
+            throw UnderflowException()
+    }
+
+    override fun readDouble(): Double {
+        return if (readableBytes() >= 8)
+            longBitsToDouble(readLong())
+        else
+            throw UnderflowException()
+    }
+
+    override fun readChar(): Char {
+        return if (readableBytes() >= 2)
+            readShort().toInt().toChar()
+        else
+            throw UnderflowException()
+    }
+
+    override fun readUByte(): Short {
+        return if (isReadable())
+            read().toShort()
+        else
+            throw UnderflowException()
+    }
+
+    override fun readUShort(): Int {
+        return if (readableBytes() >= 2)
+            readShort().toInt().and(0xffff)
+        else
+            throw UnderflowException()
+    }
+
+    override fun readUInt(): Long {
+        return if (readableBytes() >= 4)
+            readInt().toLong().and(0xffffffff)
+        else
+            throw UnderflowException()
+    }
+
+    override fun mark() {
+        saveMark()
+    }
+
+    override fun reset() {
+        if (isMarkValid())
+            loadMark()
+    }
+
+    override fun rArray(): ByteArray {
+        return blocks[rBlock]
+    }
+
+    override fun rOffset(): Int {
+        return rIndex
+    }
+
+    /**
+     * 저장된 read position이 있는 지 여부 반환.
+     */
+    private fun isMarkValid(): Boolean {
+        return (markedBlock >= 0)
+    }
+
+    /**
+     * 저장된 read position 복원
+     */
+    private fun loadMark() {
+        rBlock = markedBlock
+        rIndex = markedIndex
+    }
+
+    /**
+     * 현재 read position 저장.
+     */
+    private fun saveMark() {
+        markedBlock = rBlock
+        markedIndex = rIndex
     }
 }

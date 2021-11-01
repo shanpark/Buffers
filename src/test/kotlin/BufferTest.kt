@@ -76,6 +76,10 @@ class BufferTest {
         buffer.writeLong(0x12345678_12345678L)
         buffer.writeFloat(123.45f)
         buffer.writeDouble(1234.56789)
+        buffer.writeChar('한')
+        buffer.writeByte(-1)
+        buffer.writeShort(-1)
+        buffer.writeInt(-1)
 
         assertThat(buffer.readByte()).isEqualTo(0x12)
         assertThat(buffer.readShort()).isEqualTo(0x1234)
@@ -83,5 +87,9 @@ class BufferTest {
         assertThat(buffer.readLong()).isEqualTo(0x12345678_12345678L)
         assertThat(buffer.readFloat()).isEqualTo(123.45f)
         assertThat(buffer.readDouble()).isEqualTo(1234.56789)
-   }
+        assertThat(buffer.readChar()).isEqualTo('한')
+        assertThat(buffer.readUByte()).isEqualTo(0xff)
+        assertThat(buffer.readUShort()).isEqualTo(0xffff)
+        assertThat(buffer.readUInt()).isEqualTo(0xffffffffL)
+    }
 }
