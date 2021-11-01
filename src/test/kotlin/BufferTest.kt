@@ -1,10 +1,12 @@
 import io.github.shanpark.buffers.Buffer
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 
 class BufferTest {
 
     @Test
+    @DisplayName("Buffer 테스트")
     internal fun bufferTest() {
         val buf = ByteArray(1024) // dummy data.
         val data = ByteArray(1024) // dummy data.
@@ -50,4 +52,24 @@ class BufferTest {
         assertThat(buffer.readInt()).isEqualTo(0x0c0d0e0f)
         assertThat(buffer.readLong()).isEqualTo(0x10111213_14151617L)
     }
+
+    @Test
+    @DisplayName("Buffer 데이터 RW 테스트")
+    internal fun dataRWTest() {
+        val buffer = Buffer(1024)
+
+        buffer.writeByte(0x12)
+        buffer.writeShort(0x1234)
+        buffer.writeInt(0x12345678)
+        buffer.writeLong(0x12345678_12345678L)
+        buffer.writeFloat(123.45f)
+        buffer.writeDouble(1234.56789)
+
+        assertThat(buffer.readByte()).isEqualTo(0x12)
+        assertThat(buffer.readShort()).isEqualTo(0x1234)
+        assertThat(buffer.readInt()).isEqualTo(0x12345678)
+        assertThat(buffer.readLong()).isEqualTo(0x12345678_12345678L)
+        assertThat(buffer.readFloat()).isEqualTo(123.45f)
+        assertThat(buffer.readDouble()).isEqualTo(1234.56789)
+   }
 }

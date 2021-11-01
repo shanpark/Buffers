@@ -2,6 +2,10 @@ package io.github.shanpark.buffers
 
 import io.github.shanpark.buffers.exception.BufferException
 import io.github.shanpark.buffers.exception.UnderflowException
+import java.lang.Double.doubleToLongBits
+import java.lang.Double.longBitsToDouble
+import java.lang.Float.floatToIntBits
+import java.lang.Float.intBitsToFloat
 import kotlin.math.max
 
 class Buffer(initialCapacity: Int = 1024) {
@@ -131,34 +135,6 @@ class Buffer(initialCapacity: Int = 1024) {
     }
 
     /**
-     * 버퍼에서 4 byte를 읽어서 Int형으로 만들어 반환한다.
-     *
-     * @return 버퍼로부터 읽은 4 byte의 데이터로 만들어진 Int 값.
-     *
-     * @throws UnderflowException 버퍼의 데이터가 4 byte 보다 적게 남아있으면 발생
-     */
-    fun readInt(): Int {
-        if (readableBytes() >= 4)
-            return read().shl(8).or(read()).shl(8).or(read()).shl(8).or(read())
-        else
-            throw UnderflowException()
-    }
-
-    /**
-     * 버퍼에서 8 byte를 읽어서 Long형으로 만들어 반환한다.
-     *
-     * @return 버퍼로부터 읽은 8 byte의 데이터로 만들어진 Long 값.
-     *
-     * @throws UnderflowException 버퍼의 데이터가 8 byte 보다 적게 남아있으면 발생
-     */
-    fun readLong(): Long {
-        if (readableBytes() >= 8)
-            return readInt().toLong().shl(32).or(readInt().toLong())
-        else
-            throw UnderflowException()
-    }
-
-    /**
      * 버퍼에 1 byte의 데이터를 write한다.
      * 현재 write가 가능한 공간이 없다면 추가로 공간을 할당한 후 write를 수행한다.
      */
@@ -200,6 +176,138 @@ class Buffer(initialCapacity: Int = 1024) {
         } else {
             throw IndexOutOfBoundsException()
         }
+    }
+
+    /**
+     * 버퍼에서 1 byte를 읽어서 Byte형으로 만들어 반환한다.
+     *
+     * @return 버퍼로부터 읽은 1 byte의 데이터로 만들어진 Byte 값.
+     *
+     * @throws UnderflowException 버퍼가 비어있으면 발생
+     */
+    fun readByte(): Byte {
+        if (isReadable())
+            return read().toByte()
+        else
+            throw UnderflowException()
+    }
+
+    /**
+     * 버퍼에서 2 byte를 읽어서 Short형으로 만들어 반환한다.
+     *
+     * @return 버퍼로부터 읽은 2 byte의 데이터로 만들어진 Int 값.
+     *
+     * @throws UnderflowException 버퍼의 데이터가 2 byte 보다 적게 남아있으면 발생
+     */
+    fun readShort(): Short {
+        if (readableBytes() >= 2)
+            return read().shl(8).or(read()).toShort()
+        else
+            throw UnderflowException()
+    }
+
+    /**
+     * 버퍼에서 4 byte를 읽어서 Int형으로 만들어 반환한다.
+     *
+     * @return 버퍼로부터 읽은 4 byte의 데이터로 만들어진 Int 값.
+     *
+     * @throws UnderflowException 버퍼의 데이터가 4 byte 보다 적게 남아있으면 발생
+     */
+    fun readInt(): Int {
+        if (readableBytes() >= 4)
+            return read().shl(8).or(read()).shl(8).or(read()).shl(8).or(read())
+        else
+            throw UnderflowException()
+    }
+
+    /**
+     * 버퍼에서 8 byte를 읽어서 Long형으로 만들어 반환한다.
+     *
+     * @return 버퍼로부터 읽은 8 byte의 데이터로 만들어진 Long 값.
+     *
+     * @throws UnderflowException 버퍼의 데이터가 8 byte 보다 적게 남아있으면 발생
+     */
+    fun readLong(): Long {
+        if (readableBytes() >= 8)
+            return readInt().toLong().shl(32).or(readInt().toLong().and(0xffffffff))
+        else
+            throw UnderflowException()
+    }
+
+    /**
+     * 버퍼에서 4 byte를 읽어서 Float형으로 만들어 반환한다.
+     *
+     * @return 버퍼로부터 읽은 4 byte의 데이터로 만들어진 Float 값.
+     *
+     * @throws UnderflowException 버퍼의 데이터가 4 byte 보다 적게 남아있으면 발생
+     */
+    fun readFloat(): Float {
+        if (readableBytes() >= 4)
+            return intBitsToFloat(readInt())
+        else
+            throw UnderflowException()
+    }
+
+    /**
+     * 버퍼에서 8 byte를 읽어서 Double형으로 만들어 반환한다.
+     *
+     * @return 버퍼로부터 읽은 8 byte의 데이터로 만들어진 Double 값.
+     *
+     * @throws UnderflowException 버퍼의 데이터가 8 byte 보다 적게 남아있으면 발생
+     */
+    fun readDouble(): Double {
+        if (readableBytes() >= 8)
+            return longBitsToDouble(readLong())
+        else
+            throw UnderflowException()
+    }
+
+    /**
+     * 버퍼에 Byte 값을 write한다.
+     */
+    fun writeByte(value: Byte) {
+        write(value.toInt())
+    }
+
+    /**
+     * 버퍼에 Short 값을 write한다.
+     */
+    fun writeShort(value: Short) {
+        val i = value.toInt()
+        write(i.shr(8))
+        write(i)
+    }
+
+    /**
+     * 버퍼에 Int 값을 write한다.
+     */
+    fun writeInt(value: Int) {
+        write(value.shr(24))
+        write(value.shr(16))
+        write(value.shr(8))
+        write(value)
+    }
+
+    /**
+     * 버퍼에 Long 값을 write한다.
+     */
+    fun writeLong(value: Long) {
+        writeInt(value.shr(32).toInt())
+        writeInt(value.toInt()) // least significant 32 bit wil be used.
+    }
+
+    /**
+     * 버퍼에 Float 값을 write한다.
+     */
+    fun writeFloat(value: Float) {
+        writeInt(floatToIntBits(value))
+    }
+
+    /**
+     * 버퍼에 Double 값을 write한다.
+     */
+    fun writeDouble(value: Double) {
+        writeLong(doubleToLongBits(value))
     }
 
     /**
