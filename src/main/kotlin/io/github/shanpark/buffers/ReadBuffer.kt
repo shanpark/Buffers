@@ -1,5 +1,7 @@
 package io.github.shanpark.buffers
 
+import io.github.shanpark.buffers.exception.UnderflowException
+
 interface ReadBuffer {
     fun isReadable(): Boolean
     fun readableBytes(): Int
@@ -8,7 +10,14 @@ interface ReadBuffer {
     fun read(buf: ByteArray): Int
     fun read(buf: ByteArray, offset: Int, length: Int): Int
 
-    fun readByte(): Byte
+//    fun readByte(): Byte
+    fun readByte(): Byte {
+        return if (isReadable())
+            read().toByte()
+        else
+            throw UnderflowException()
+    }
+
     fun readShort(): Short
     fun readInt(): Int
     fun readLong(): Long

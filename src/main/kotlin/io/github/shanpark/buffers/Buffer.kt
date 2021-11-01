@@ -10,7 +10,6 @@ import kotlin.math.max
 import kotlin.math.min
 
 class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable, Clearable {
-
     private val blocks = mutableListOf<ByteArray>()
     private var rBlock: Int = 0
     private var wBlock: Int = 0
@@ -186,12 +185,12 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
      *
      * @throws UnderflowException 버퍼가 비어있으면 발생
      */
-    override fun readByte(): Byte {
-        return if (isReadable())
-            read().toByte()
-        else
-            throw UnderflowException()
-    }
+//    override fun readByte(): Byte {
+//        return if (isReadable())
+//            read().toByte()
+//        else
+//            throw UnderflowException()
+//    }
 
     /**
      * 버퍼에서 2 byte를 읽어서 Short형으로 만들어 반환한다.
@@ -506,7 +505,7 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
     }
 }
 
-internal class Slice(private val blocks: List<ByteArray>, private var rBlock: Int, private var rIndex: Int, sliceLength: Int): ReadBuffer {
+private class Slice(private val blocks: List<ByteArray>, private var rBlock: Int, private var rIndex: Int, sliceLength: Int): ReadBuffer {
     private var wBlock: Int = rBlock
     private var wIndex: Int = rIndex
 
@@ -584,12 +583,12 @@ internal class Slice(private val blocks: List<ByteArray>, private var rBlock: In
         }
     }
 
-    override fun readByte(): Byte {
-        return if (isReadable())
-            read().toByte()
-        else
-            throw UnderflowException()
-    }
+//    override fun readByte(): Byte {
+//        return if (isReadable())
+//            read().toByte()
+//        else
+//            throw UnderflowException()
+//    }
 
     override fun readShort(): Short {
         return if (readableBytes() >= 2)
