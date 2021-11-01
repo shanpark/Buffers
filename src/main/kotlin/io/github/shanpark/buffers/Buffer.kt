@@ -1,5 +1,6 @@
 package io.github.shanpark.buffers
 
+import io.github.shanpark.buffers.exception.UnderflowException
 import kotlin.math.max
 import kotlin.math.min
 
@@ -38,6 +39,25 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
             blocks[rBlock][rIndex++].toInt().and(0xff)
         } else {
             return -1
+        }
+    }
+
+    override fun skip(bytes: Int) {
+        if (readableBytes() >= bytes) {
+            var length = bytes
+            while (length > 0) {
+                val rest = blocks[rBlock].size - rIndex
+                val len = min(length, rest)
+                length -= len
+                if (length > 0) {
+                    rBlock++
+                    rIndex = 0
+                } else {
+                    rIndex += len
+                }
+            }
+        } else {
+            throw UnderflowException()
         }
     }
 
@@ -144,6 +164,29 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
     }
 
     /**
+     * 이 버퍼의 현재 상태에서 length 만큼만 읽을 수 있도록 제한된 ReadBuffer를 반환한다.
+     * 실제로 데이터의 복사가 일어나지는 않으며 같은 내부 버퍼를 공유한다.
+     *
+     * 버퍼 공간은 공유되지만 반환된 ReadBuffer로부터 읽기를 수행해도 이 버퍼는 아무런 영향을 받지 않는다.
+     * 반면에 반환된 ReadBuffer 객체는 이 버퍼의 내부 구조가 바뀌면 모두 무효화된다.
+     * 무효화된 후의 사용에 따른 동작은 undefined.
+     *
+     * 남아있는 데이터가 length 보다 작으면 UnderflowException이 발생한다.
+     *
+     * @param length 생성된 ReadBuffer로부터 읽고자 하는 데이터의 길이.
+     *
+     * @return 데이터를 읽을 수 있는 ReadBuffer 객체.
+     *
+     * @throws UnderflowException 남아있는 데이터보다 더 많은 데이터를 요청하는 경우 발생.
+     */
+    fun slice(length: Int): ReadBuffer {
+        if (readableBytes() >= length)
+            return Slice(blocks, rBlock, rIndex, length)
+        else
+            throw UnderflowException()
+    }
+
+    /**
      * 저장된 read position 무효화
      */
     private fun invalidateMark() {
@@ -207,6 +250,25 @@ private class Slice(private val blocks: List<ByteArray>, private var rBlock: Int
             blocks[rBlock][rIndex++].toInt().and(0xff)
         } else {
             return -1
+        }
+    }
+
+    override fun skip(bytes: Int) {
+        if (readableBytes() >= bytes) {
+            var length = bytes
+            while (length > 0) {
+                val rest = blocks[rBlock].size - rIndex
+                val len = min(length, rest)
+                length -= len
+                if (length > 0) {
+                    rBlock++
+                    rIndex = 0
+                } else {
+                    rIndex += len
+                }
+            }
+        } else {
+            throw UnderflowException()
         }
     }
 
