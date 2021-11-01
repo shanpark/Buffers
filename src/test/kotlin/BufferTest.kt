@@ -49,8 +49,20 @@ class BufferTest {
         assertThat(buffer.rOffset()).isEqualTo(12)
         assertThat(buf[0]).isEqualTo(12)
 
+        buffer.compact()
+        assertThat(arr === buffer.rArray()).isFalse
+        assertThat(buffer.rOffset()).isEqualTo(12)
+
+        buffer.mark()
         assertThat(buffer.readInt()).isEqualTo(0x0c0d0e0f)
         assertThat(buffer.readLong()).isEqualTo(0x10111213_14151617L)
+
+        buffer.reset()
+        assertThat(buffer.readInt()).isEqualTo(0x0c0d0e0f)
+        assertThat(buffer.readLong()).isEqualTo(0x10111213_14151617L)
+
+        buffer.clear()
+        assertThat(buffer.readableBytes()).isEqualTo(0)
     }
 
     @Test
