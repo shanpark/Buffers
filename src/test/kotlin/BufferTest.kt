@@ -98,6 +98,7 @@ class BufferTest {
         buffer.writeByte(-1)
         buffer.writeShort(-1)
         buffer.writeInt(-1)
+        buffer.writeString("Hello World!")
 
         assertThat(buffer.readByte()).isEqualTo(0x12)
         assertThat(buffer.readShort()).isEqualTo(0x1234)
@@ -109,5 +110,6 @@ class BufferTest {
         assertThat(buffer.readUByte()).isEqualTo(0xff)
         assertThat(buffer.readUShort()).isEqualTo(0xffff)
         assertThat(buffer.readUInt()).isEqualTo(0xffffffffL)
+        assertThat(buffer.readString(buffer.readableBytes())).isEqualTo("Hello World!")
     }
 }

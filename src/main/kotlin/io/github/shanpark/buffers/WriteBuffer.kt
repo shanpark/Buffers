@@ -1,5 +1,8 @@
 package io.github.shanpark.buffers
 
+import io.github.shanpark.buffers.exception.UnderflowException
+import java.nio.charset.Charset
+
 interface WriteBuffer {
     /**
      * 현재 버퍼에 write할 수 있는 데이터 공간의 크기(byte 단위)를 얻어온다.
@@ -111,6 +114,17 @@ interface WriteBuffer {
      * @param value 버퍼에 기록할 Char 값.
      */
     fun writeChar(value: Char) = writeShort(value.code.toShort())
+
+    /**
+     * 지정된 length만큼의 데이터를 이용해서 String을 생성 반환한다.
+     *
+     * @param charset String을 생성할 때 사용할 charset.
+     *
+     * @return 생성된 String 객체.
+     *
+     * @throws UnderflowException 버퍼의 데이터가 length 보다 적게 남아있으면 발생
+     */
+    fun writeString(value: String, charset: Charset = Charsets.UTF_8) = write(value.toByteArray(charset))
 
     /**
      * write position을 지정된 length 만큼 이동시킨다.

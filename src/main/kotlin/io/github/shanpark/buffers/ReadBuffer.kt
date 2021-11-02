@@ -2,6 +2,7 @@ package io.github.shanpark.buffers
 
 import io.github.shanpark.buffers.exception.BufferException
 import io.github.shanpark.buffers.exception.UnderflowException
+import java.nio.charset.Charset
 
 interface ReadBuffer {
     /**
@@ -183,6 +184,26 @@ interface ReadBuffer {
             readShort().toInt().toChar()
         else
             throw UnderflowException()
+    }
+
+    /**
+     * 지정된 length만큼의 데이터를 이용해서 String을 생성 반환한다.
+     *
+     * @param length String을 생성하는 데 사용되어야 하는 데이터의 길이. (byte 단위)
+     * @param charset String을 생성할 때 사용할 charset.
+     *
+     * @return 생성된 String 객체.
+     *
+     * @throws UnderflowException 버퍼의 데이터가 length 보다 적게 남아있으면 발생
+     */
+    fun readString(length: Int, charset: Charset = Charsets.UTF_8): String {
+        return if (readableBytes() >= length) {
+            val temp = ByteArray(length)
+            read(temp)
+            String(temp, charset)
+        } else {
+            throw UnderflowException()
+        }
     }
 
     /**

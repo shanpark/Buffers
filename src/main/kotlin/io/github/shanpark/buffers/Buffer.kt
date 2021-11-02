@@ -1,7 +1,9 @@
 package io.github.shanpark.buffers
 
+import io.github.shanpark.buffers.exception.UnderflowException
 import java.io.InputStream
 import java.io.OutputStream
+import java.nio.charset.Charset
 import kotlin.math.max
 import kotlin.math.min
 
@@ -44,6 +46,33 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
             blocks[rBlock][rIndex++].toInt().and(0xff)
         } else {
             return -1
+        }
+    }
+
+    /**
+     * 지정된 length만큼의 데이터를 이용해서 String을 생성 반환한다.
+     * Buffer의 내부 구조에따라 더 효율적인 방법으로 구현하기 위해서 override함.
+     *
+     * @param length String을 생성하는 데 사용되어야 하는 데이터의 길이. (byte 단위)
+     * @param charset String을 생성할 때 사용할 charset.
+     *
+     * @return 생성된 String 객체.
+     *
+     * @throws UnderflowException 버퍼의 데이터가 length 보다 적게 남아있으면 발생
+     */
+    override fun readString(length: Int, charset: Charset): String {
+        return if (readableBytes() >= length) {
+            if (length <= (blocks[rBlock].size - rIndex)) {
+                val str = String(blocks[rBlock], rIndex, length, charset)
+                rSkip(length)
+                str
+            } else {
+                val temp = ByteArray(length)
+                read(temp)
+                String(temp, charset)
+            }
+        } else {
+            throw UnderflowException()
         }
     }
 
