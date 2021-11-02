@@ -1,7 +1,5 @@
 package io.github.shanpark.buffers
 
-import io.github.shanpark.buffers.exception.OverflowException
-
 interface WriteBuffer {
     /**
      * 현재 버퍼에 write할 수 있는 데이터 공간의 크기(byte 단위)를 얻어온다.
@@ -120,7 +118,7 @@ interface WriteBuffer {
      *
      * @param skipLength write position을 옮길 byte 수.
      *
-     * @throws OverflowException 할당된 공간 이상의 위치로 skip할 것을 요청하면 발생한다.
+     * @throws IndexOutOfBoundsException 할당된 공간 이상의 위치로 skip할 것을 요청하면 발생한다.
      */
     fun wSkip(skipLength: Int)
 

@@ -1,7 +1,5 @@
 package io.github.shanpark.buffers
 
-import io.github.shanpark.buffers.exception.OverflowException
-import io.github.shanpark.buffers.exception.UnderflowException
 import java.io.InputStream
 import java.io.OutputStream
 import kotlin.math.max
@@ -64,7 +62,7 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
                 }
             }
         } else {
-            throw UnderflowException()
+            throw IndexOutOfBoundsException()
         }
     }
 
@@ -122,7 +120,7 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
         if (skipLength <= rest)
             rIndex += skipLength
         else
-            throw OverflowException()
+            throw IndexOutOfBoundsException()
     }
 
     /**
@@ -151,8 +149,6 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
     /**
      * 사용이 끝난 내부 버퍼들을 정리한다.
      * 내부 구조가 바뀌게 되므로 mark()를 호출하여 저장된 상태는 모두 invalidate 된다.
-     * 이 버퍼에 의해서 생성된 다른 버퍼나 stream들도 모두 invalidate되며 이렇게 내부 상태의 변경에 따라
-     * 유효성이 바뀌는 객체들의 사용은 사용자의 책임이다.
      */
     override fun compact() {
         while (rBlock > 0) {
@@ -166,12 +162,13 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
 
     /**
      * 버퍼의 모든 데이터를 삭제하고 처음 상태로 되돌린다.
-     * mark()를 호출해서 저장된 상태는 물론이고 이 버퍼에 의해서 생성된 다른 버퍼나 stream들도 모두 invalidate되며
-     * 이렇게 내부 상태의 변경에 따라 유효성이 바뀌는 객체들의 사용은 사용자의 책임이다.
+     * mark()로 저장된 상태도 invalidate된다.
      */
     override fun clear() {
-        while (blocks.size > 1)
-            blocks.removeLast()
+        val newBuffer = ByteArray(blocks.first().size)
+        blocks.clear() // 완전히 clear를 해야 한다. 공유하는 객체가 있을 수 있기 때문에 다시 재사용을 하면 공유 객체에게 영향이 생긴다.
+        blocks.add(newBuffer)
+
         rBlock = 0
         wBlock = 0
         rIndex = 0
@@ -181,31 +178,31 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
     }
 
     /**
-     * 이 버퍼의 현재 상태에서 length 만큼만 읽을 수 있도록 제한된 ReadBuffer를 반환한다.
-     * 실제로 데이터의 복사가 일어나지는 않으며 같은 내부 버퍼를 공유한다.
+     * 이 버퍼에서 length 만큼만 읽을 수 있도록 제한된 ReadBuffer를 생성하여 반환한다.
+     * 실제로 데이터의 복사가 일어나지는 않으며 같은 내부 버퍼를 공유한다. 이 버퍼의 read position은 length만큼 이동하게 된다.
      *
-     * 버퍼 공간은 공유되지만 반환된 ReadBuffer로부터 읽기를 수행해도 이 버퍼는 아무런 영향을 받지 않는다.
-     * 반면에 반환된 ReadBuffer 객체는 이 버퍼의 내부 구조가 바뀌면 모두 무효화된다.
-     * 무효화된 후의 사용에 따른 동작은 undefined.
-     *
-     * 남아있는 데이터가 length 보다 작으면 UnderflowException이 발생한다.
+     * 남아있는 데이터가 length 보다 작으면 IndexOutOfBoundsException이 발생한다.
      *
      * @param length 생성된 ReadBuffer로부터 읽고자 하는 데이터의 길이.
      *
      * @return 데이터를 읽을 수 있는 ReadBuffer 객체.
      *
-     * @throws UnderflowException 남아있는 데이터보다 더 많은 데이터를 요청하는 경우 발생.
+     * @throws IndexOutOfBoundsException 남아있는 데이터보다 더 많은 데이터를 요청하는 경우 발생.
      */
-    fun slice(length: Int): ReadBuffer {
-        if (readableBytes() >= length)
-            return Slice(blocks, rBlock, rIndex, length)
+    fun readSlice(length: Int): ReadBuffer {
+        if (readableBytes() >= length) {
+            val slice = Slice(blocks, rBlock, rIndex, length)
+            rSkip(length) // read position 이동.
+            return slice
+        }
         else
-            throw UnderflowException()
+            throw IndexOutOfBoundsException()
     }
 
     /**
      * 이 버퍼를 배경으로 동작하는 InputStream 객체를 반환한다.
-     * 반환된 InputStream 객체를 통해서 데이터를 읽어들이면 이 버퍼의 read position도 이동된다.
+     * 반환된 InputStream 객체는 이 버퍼의 proxy 정도의 역할이므로 반환된 InputStream 객체를
+     * 통해서 데이터를 읽으면 이 버퍼의 read position도 이동된다.
      *
      * @return 이 버퍼를 배경으로 동작하는 InputStream 객체.
      */
@@ -213,6 +210,13 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
         return BufferInputStream(this)
     }
 
+    /**
+     * 이 버퍼를 배경으로 동작하는 OutputStream 객체를 반환한다.
+     * 반환된 OutputStream 객체는 이 버퍼의 proxy 정도의 역할이므로 반환된 OutputStream 객체를
+     * 통해서 write 작업을 하면 이 버퍼의 write position도 이동된다.
+     *
+     * @return 이 버퍼를 배경으로 동작하는 InputStream 객체.
+     */
     fun outputStream(): OutputStream {
         return BufferOutputStream(this)
     }
@@ -240,16 +244,16 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
 
 /**
  * Buffer 클래스 내부에서만 생성되는 클래스로 ReadBuffer를 구현하고 자신을 생성한 Buffer 인스턴스와 내부 버퍼를
- * 공유한다. 자신은 내부 버퍼의 내용을 변경할 수 없지만 자신을 생성한 부모 Buffer 클래스는 clear(), compact() 같은
- * 메소드를 통해서 내부 버퍼의 구조를 변경할 수 있기 때문에 부모 클래스가 내부 버퍼의 내용을 변경하면 자기 자신은
- * invalid한 상태가 된다.
+ * 공유한다. 내부 버퍼는 공유하지만 상태는 별도로 관리되므로 여기서 일어나는 read 작업은 부모 버퍼에 아무런 영향을 미치지 않는다.
  *
- * 부모 인스턴스의 slice()를 메소드로 생성되어 사용되지만 valid한 상태에서만 사용해야 하며 이에 대한 책임은
- * 사용자에게 있다.
+ * 부모 버퍼가 해제가 되더라도 내부 버퍼에 대한 참조는 따로 가지고 있기 때문에 생성된 Slice 객체는 안전하게 사용가능하다.
  */
-private class Slice(private val blocks: List<ByteArray>, private var rBlock: Int, private var rIndex: Int, sliceLength: Int): ReadBuffer {
-    private var wBlock: Int = rBlock
-    private var wIndex: Int = rIndex
+private class Slice(parentBlocks: List<ByteArray>, parentRBlock: Int, parentRIndex: Int, sliceLength: Int) : ReadBuffer {
+    private val blocks = mutableListOf<ByteArray>()
+    private var rBlock: Int = 0
+    private var wBlock: Int = parentRBlock
+    private var rIndex: Int = parentRIndex
+    private var wIndex: Int = parentRIndex
 
     private var markedBlock: Int = -1
     private var markedIndex: Int = -1
@@ -257,7 +261,7 @@ private class Slice(private val blocks: List<ByteArray>, private var rBlock: Int
     init {
         var length = sliceLength
         while (length > 0) {
-            val rest = blocks[wBlock].size - wIndex
+            val rest = parentBlocks[wBlock].size - wIndex
             val len = min(length, rest)
             length -= len
             if (length > 0) {
@@ -267,6 +271,11 @@ private class Slice(private val blocks: List<ByteArray>, private var rBlock: Int
                 wIndex += len
             }
         }
+
+        for (inx in parentRBlock..wBlock)
+            blocks.add(parentBlocks[inx])
+
+        wBlock -= parentRBlock
     }
 
     override fun isReadable(): Boolean = (rBlock < wBlock) || (rIndex < wIndex)
@@ -308,7 +317,7 @@ private class Slice(private val blocks: List<ByteArray>, private var rBlock: Int
                 }
             }
         } else {
-            throw UnderflowException()
+            throw IndexOutOfBoundsException()
         }
     }
 
