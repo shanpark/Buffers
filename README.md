@@ -17,6 +17,7 @@ buffer.writeChar('한')
 buffer.writeByte(-1)
 buffer.writeShort(-1)
 buffer.writeInt(-1)
+buffer.writeString("Hello World!")
 
 buffer.readByte() // == 0x12
 buffer.readShort() // == 0x1234
@@ -28,6 +29,7 @@ buffer.readChar() // == '한'
 buffer.readUByte() // == 0xff
 buffer.readUShort() // == 0xffff
 buffer.readUInt() // == 0xffffffffL
+buffer.readString() // == "Hello World!"
 
 // OutputStream from Buffer.
 val ostream = buffer.outputStream()
@@ -49,6 +51,6 @@ repositories {
 }
 
 dependencies {
-   implementation 'io.github.shanpark:buffers:0.0.1'
+   implementation 'io.github.shanpark:buffers:0.0.2'
 }
 ```
