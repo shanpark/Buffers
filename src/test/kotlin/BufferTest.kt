@@ -62,10 +62,20 @@ class BufferTest {
         assertThat(buffer.readLong()).isEqualTo(0x10111213_14151617L)
 
         buffer.read(buf, 0, 999)
-        val readable = buffer.readableBytes()
+        var readable = buffer.readableBytes()
         val slice = buffer.slice(8)
         assertThat(slice.readLong()).isEqualTo(0xff000102L.shl(32).or(0x03040506L))
         assertThat(buffer.readableBytes()).isEqualTo(readable)
+
+        readable = buffer.readableBytes()
+        val ist = buffer.inputStream()
+        assertThat(ist.read()).isEqualTo(0xff)
+        assertThat(buffer.readableBytes()).isEqualTo(readable - 1)
+
+        val ost = buffer.outputStream()
+        ost.write(0x00)
+        ost.write(buf, 1, 1023)
+        assertThat(buffer.readableBytes()).isEqualTo(readable + 1023)
 
         buffer.clear()
         assertThat(buffer.readableBytes()).isEqualTo(0)

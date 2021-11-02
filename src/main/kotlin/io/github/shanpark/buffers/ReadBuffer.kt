@@ -228,13 +228,13 @@ interface ReadBuffer {
     }
 
     /**
-     * read position을 지정된 byte 수 만큼 옮긴다.
+     * read position을 지정된 length 만큼 이동시킨다.
      *
-     * @param bytes read position을 옮길 byte 수.
+     * @param skipLength read position을 옮길 byte 수.
      *
      * @throws UnderflowException 남아있는 데이터의 크기가 지정된 byte 수 보다 작은 경우 발생
      */
-    fun skip(bytes: Int)
+    fun rSkip(skipLength: Int)
 
     /**
      * 현재 read position을 임시로 저장한다.
@@ -256,7 +256,7 @@ interface ReadBuffer {
      * 반환된 array의 전체를 읽을 수 있는 건 아니다. rOffset() 메소드가 반환하는 위치부터 읽을 수 있는 데이터가 있다.
      * readableBytes()가 반환하는 값이 이 남은 공간의 크기보다 크다면 남은 공간 전체를 읽을 수 있고 그렇지 않다면
      * readableBytes()가 반환하는 값 만큼 읽을 수 있다.
-     * readableBytes()가 반환하는 값이 이 남은 공간의 크기보다 크다면 버퍼의 내용을 다 읽어내거ㅏ skip()한 후에
+     * readableBytes()가 반환하는 값이 이 남은 공간의 크기보다 크다면 버퍼의 내용을 다 읽어내거 rSkip()한 후에
      * 다시 이 메소드를 호출하면 그 다음 내용을 담은 array()가 반환된다.
      * 버퍼가 비어있더라도 array는 반환된다.
      *

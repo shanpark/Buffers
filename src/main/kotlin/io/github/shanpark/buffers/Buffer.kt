@@ -1,9 +1,16 @@
 package io.github.shanpark.buffers
 
+import io.github.shanpark.buffers.exception.OverflowException
 import io.github.shanpark.buffers.exception.UnderflowException
+import java.io.InputStream
+import java.io.OutputStream
 import kotlin.math.max
 import kotlin.math.min
 
+/**
+ * read, write가 모두 가능한 버퍼 기능 구현.
+ * 내부적으로 여러 ByteArray를 두고 데이터를 저장한다.
+ */
 class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable, Clearable {
     private val blocks = mutableListOf<ByteArray>()
     private var rBlock: Int = 0
@@ -42,9 +49,9 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
         }
     }
 
-    override fun skip(bytes: Int) {
-        if (readableBytes() >= bytes) {
-            var length = bytes
+    override fun rSkip(skipLength: Int) {
+        if (readableBytes() >= skipLength) {
+            var length = skipLength
             while (length > 0) {
                 val rest = blocks[rBlock].size - rIndex
                 val len = min(length, rest)
@@ -106,6 +113,16 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
     override fun write(data: Int) {
         allocBufferIfNeeded()
         blocks[wBlock][wIndex++] = data.toByte()
+    }
+
+    override fun wSkip(skipLength: Int) {
+        // write position은 항상 마지막 block에 존재하며 추가 할당은 일어나지 않으므로 다음 block으로
+        // 이동하는 건 고려하지 않아도 됨.
+        val rest = blocks[wBlock].size - wIndex
+        if (skipLength <= rest)
+            rIndex += skipLength
+        else
+            throw OverflowException()
     }
 
     /**
@@ -187,6 +204,20 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
     }
 
     /**
+     * 이 버퍼를 배경으로 동작하는 InputStream 객체를 반환한다.
+     * 반환된 InputStream 객체를 통해서 데이터를 읽어들이면 이 버퍼의 read position도 이동된다.
+     *
+     * @return 이 버퍼를 배경으로 동작하는 InputStream 객체.
+     */
+    fun inputStream(): InputStream {
+        return BufferInputStream(this)
+    }
+
+    fun outputStream(): OutputStream {
+        return BufferOutputStream(this)
+    }
+
+    /**
      * 저장된 read position 무효화
      */
     private fun invalidateMark() {
@@ -207,6 +238,15 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
     }
 }
 
+/**
+ * Buffer 클래스 내부에서만 생성되는 클래스로 ReadBuffer를 구현하고 자신을 생성한 Buffer 인스턴스와 내부 버퍼를
+ * 공유한다. 자신은 내부 버퍼의 내용을 변경할 수 없지만 자신을 생성한 부모 Buffer 클래스는 clear(), compact() 같은
+ * 메소드를 통해서 내부 버퍼의 구조를 변경할 수 있기 때문에 부모 클래스가 내부 버퍼의 내용을 변경하면 자기 자신은
+ * invalid한 상태가 된다.
+ *
+ * 부모 인스턴스의 slice()를 메소드로 생성되어 사용되지만 valid한 상태에서만 사용해야 하며 이에 대한 책임은
+ * 사용자에게 있다.
+ */
 private class Slice(private val blocks: List<ByteArray>, private var rBlock: Int, private var rIndex: Int, sliceLength: Int): ReadBuffer {
     private var wBlock: Int = rBlock
     private var wIndex: Int = rIndex
@@ -253,9 +293,9 @@ private class Slice(private val blocks: List<ByteArray>, private var rBlock: Int
         }
     }
 
-    override fun skip(bytes: Int) {
-        if (readableBytes() >= bytes) {
-            var length = bytes
+    override fun rSkip(skipLength: Int) {
+        if (readableBytes() >= skipLength) {
+            var length = skipLength
             while (length > 0) {
                 val rest = blocks[rBlock].size - rIndex
                 val len = min(length, rest)
@@ -290,5 +330,25 @@ private class Slice(private val blocks: List<ByteArray>, private var rBlock: Int
 
     override fun rOffset(): Int {
         return rIndex
+    }
+}
+
+/**
+ * Buffer를 배경으로 구현된 InputStream 구현 클래스.
+ * Buffer 인스턴스를 통해서만 생성된다.
+ */
+private class BufferInputStream(private val buffer: ReadBuffer): InputStream() {
+    override fun read(): Int {
+        return buffer.read()
+    }
+}
+
+/**
+ * Buffer를 배경으로 구현된 OutputStream 구현 클래스.
+ * Buffer 인스턴스를 통해서만 생성된다.
+ */
+private class BufferOutputStream(private val buffer: WriteBuffer): OutputStream() {
+    override fun write(b: Int) {
+        buffer.write(b)
     }
 }

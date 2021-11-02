@@ -1,5 +1,7 @@
 package io.github.shanpark.buffers
 
+import io.github.shanpark.buffers.exception.OverflowException
+
 interface WriteBuffer {
     /**
      * 현재 버퍼에 write할 수 있는 데이터 공간의 크기(byte 단위)를 얻어온다.
@@ -113,13 +115,25 @@ interface WriteBuffer {
     fun writeChar(value: Char) = writeShort(value.code.toShort())
 
     /**
+     * write position을 지정된 length 만큼 이동시킨다.
+     * 현재 할당된 공간 이상으로 이동시킬 수는 없다.
+     *
+     * @param skipLength write position을 옮길 byte 수.
+     *
+     * @throws OverflowException 할당된 공간 이상의 위치로 skip할 것을 요청하면 발생한다.
+     */
+    fun wSkip(skipLength: Int)
+
+    /**
      * write 작업을 할 ByteArray를 반환한다.
      * 반환된 array의 공간을 모두 쓸 수 있는 건 아니다. offset() 메소드가 반환하는 위치부터 array의 끝까지 사용할 수 있다.
+     * array를 직접 access하여 데이터를 기록한 후에는 반드시 wSkip() 메소드를 호출하여 write position을 옮겨주어야 한다.
+     * position을 옮긴 후에 다시 wArray() 메소드를 호출하면 추가 공간이 할당되어 반환된다.
+     * 이렇게 하지 않으면 다음 write 계열 메소드가 호출되면 다시 그 부분 위에 덮어쓰게된다.
      *
      * @return write를 위해서 사용할 수 있는 ByteArray를 반환.
      */
     fun wArray(): ByteArray
-
 
     /**
      * wArray() 메소드가 반환하는 ByteArray의 사용 가능한 공간의 시작 offset을 반환한다.
