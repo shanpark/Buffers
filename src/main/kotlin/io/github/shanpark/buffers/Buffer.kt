@@ -25,20 +25,22 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
         blocks.add(ByteArray(max(initialCapacity, 1024)))
     }
 
-    override fun isReadable(): Boolean = (rBlock < wBlock) || (rIndex < wIndex)
+    override val isReadable: Boolean
+        get() = (rBlock < wBlock) || (rIndex < wIndex)
 
-    override fun readableBytes(): Int {
-        return when (wBlock - rBlock) {
-            0 -> wIndex - rIndex
-            1 -> (blocks[rBlock].size - rIndex) + wIndex
-            else -> {
-                (blocks[rBlock].size - rIndex) + ((wBlock - rBlock - 1) * blocks[rBlock].size) + wIndex
+    override val readableBytes: Int
+        get() {
+            return when (wBlock - rBlock) {
+                0 -> wIndex - rIndex
+                1 -> (blocks[rBlock].size - rIndex) + wIndex
+                else -> {
+                    (blocks[rBlock].size - rIndex) + ((wBlock - rBlock - 1) * blocks[rBlock].size) + wIndex
+                }
             }
         }
-    }
 
     override fun read(): Int {
-        return if (isReadable()) {
+        return if (isReadable) {
             if (blocks[rBlock].size == rIndex) {
                 rBlock++
                 rIndex = 0
@@ -61,7 +63,7 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
      * @throws UnderflowException 버퍼의 데이터가 length 보다 적게 남아있으면 발생
      */
     override fun readString(length: Int, charset: Charset): String {
-        return if (readableBytes() >= length) {
+        return if (readableBytes >= length) {
             if (length <= (blocks[rBlock].size - rIndex)) {
                 val str = String(blocks[rBlock], rIndex, length, charset)
                 rSkip(length)
@@ -77,7 +79,7 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
     }
 
     override fun rSkip(skipLength: Int) {
-        if (readableBytes() >= skipLength) {
+        if (readableBytes >= skipLength) {
             var length = skipLength
             while (length > 0) {
                 val rest = blocks[rBlock].size - rIndex
@@ -114,13 +116,11 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
         }
     }
 
-    override fun rArray(): ByteArray {
-        return blocks[rBlock]
-    }
+    override val rArray: ByteArray
+        get() = blocks[rBlock]
 
-    override fun rOffset(): Int {
-        return rIndex
-    }
+    override val rOffset: Int
+        get() = rIndex
 
     /**
      * 현재 버퍼에 write할 수 있는 데이터 공간의 크기(byte 단위)를 얻어온다.
@@ -128,10 +128,11 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
      *
      * @return write할 수 있는 공간의 크기(byte 단위)를 반환.
      */
-    override fun writableBytes(): Int {
-        allocBufferIfNeeded()
-        return blocks[wBlock].size - wIndex
-    }
+    override val writableBytes: Int
+        get() {
+            allocBufferIfNeeded()
+            return blocks[wBlock].size - wIndex
+        }
 
     /**
      * 버퍼에 1 byte의 데이터를 write한다.
@@ -159,10 +160,11 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
      *
      * @return write를 위해서 사용할 수 있는 ByteArray를 반환.
      */
-    override fun wArray(): ByteArray {
-        allocBufferIfNeeded()
-        return blocks[wBlock]
-    }
+    override val wArray: ByteArray
+        get() {
+            allocBufferIfNeeded()
+            return blocks[wBlock]
+        }
 
     /**
      * array() 메소드가 반환하는 ByteArray의 사용 가능한 공간의 시작 offset을 반환한다.
@@ -170,10 +172,11 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
      *
      * @return wArray()가 반환하는 ByteArray의 writable 공간의 시작 offset.
      */
-    override fun wOffset(): Int {
-        allocBufferIfNeeded()
-        return wIndex
-    }
+    override val wOffset: Int
+        get() {
+            allocBufferIfNeeded()
+            return wIndex
+        }
 
     /**
      * 사용이 끝난 내부 버퍼들을 정리한다.
@@ -219,7 +222,7 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
      * @throws IndexOutOfBoundsException 남아있는 데이터보다 더 많은 데이터를 요청하는 경우 발생.
      */
     fun readSlice(length: Int): ReadBuffer {
-        if (readableBytes() >= length) {
+        if (readableBytes >= length) {
             val slice = Slice(blocks, rBlock, rIndex, length)
             rSkip(length) // read position 이동.
             return slice
@@ -307,20 +310,21 @@ private class Slice(parentBlocks: List<ByteArray>, parentRBlock: Int, parentRInd
         wBlock -= parentRBlock
     }
 
-    override fun isReadable(): Boolean = (rBlock < wBlock) || (rIndex < wIndex)
+    override val isReadable = (rBlock < wBlock) || (rIndex < wIndex)
 
-    override fun readableBytes(): Int {
-        return when (wBlock - rBlock) {
-            0 -> wIndex - rIndex
-            1 -> (blocks[rBlock].size - rIndex) + wIndex
-            else -> {
-                (blocks[rBlock].size - rIndex) + ((wBlock - rBlock - 1) * blocks[rBlock].size) + wIndex
+    override val readableBytes: Int
+        get() {
+            return when (wBlock - rBlock) {
+                0 -> wIndex - rIndex
+                1 -> (blocks[rBlock].size - rIndex) + wIndex
+                else -> {
+                    (blocks[rBlock].size - rIndex) + ((wBlock - rBlock - 1) * blocks[rBlock].size) + wIndex
+                }
             }
         }
-    }
 
     override fun read(): Int {
-        return if (isReadable()) {
+        return if (isReadable) {
             if (blocks[rBlock].size == rIndex) {
                 rBlock++
                 rIndex = 0
@@ -332,7 +336,7 @@ private class Slice(parentBlocks: List<ByteArray>, parentRBlock: Int, parentRInd
     }
 
     override fun rSkip(skipLength: Int) {
-        if (readableBytes() >= skipLength) {
+        if (readableBytes >= skipLength) {
             var length = skipLength
             while (length > 0) {
                 val rest = blocks[rBlock].size - rIndex
@@ -362,13 +366,11 @@ private class Slice(parentBlocks: List<ByteArray>, parentRBlock: Int, parentRInd
         }
     }
 
-    override fun rArray(): ByteArray {
-        return blocks[rBlock]
-    }
+    override val rArray: ByteArray
+        get() = blocks[rBlock]
 
-    override fun rOffset(): Int {
-        return rIndex
-    }
+    override val rOffset: Int
+        get() = rIndex
 }
 
 /**

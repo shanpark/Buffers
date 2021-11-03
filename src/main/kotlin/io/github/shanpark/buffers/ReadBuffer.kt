@@ -6,21 +6,14 @@ import java.nio.charset.Charset
 
 interface ReadBuffer {
     /**
-     * read()가 반환할 수 있는 데이터가 있는지 여부를 반환한다.
-     * 참고로 writable() 메소드는 없다. 항상 writable이기 때문이다.
-     *
-     * @return reaa()가 반환할 데이터가 있으면 true, 반환할 데이터가 없으면 false.
+     * 버퍼에 읽을 수 있는 데이터가 있는 지 여부.
      */
-    fun isReadable(): Boolean
+    val isReadable: Boolean
 
     /**
-     * 현재 버퍼에 write할 수 있는 데이터 공간의 크기(byte 단위)를 얻어온다.
-     * 버퍼의 현재 상태에 따른 값이며 버퍼에 write할 수 있는 공간이 없는 경우 추가로 공간을 할당하기 때문에
-     * 0이 반환되는 일은 없다.
-     *
-     * @return write할 수 있는 공간의 크기(byte 단위)를 반환.
+     * 현재 버퍼에 읽을 수 있는 데이터의 크기. (byte 단위)
      */
-    fun readableBytes(): Int
+    val readableBytes: Int
 
     /**
      * 버퍼에서 한 byte의 데이터를 읽어서 반환한다.
@@ -96,7 +89,7 @@ interface ReadBuffer {
      * @throws UnderflowException 버퍼가 비어있으면 발생
      */
     fun readByte(): Byte {
-        return if (isReadable())
+        return if (isReadable)
             read().toByte()
         else
             throw UnderflowException()
@@ -110,7 +103,7 @@ interface ReadBuffer {
      * @throws UnderflowException 버퍼의 데이터가 2 byte 보다 적게 남아있으면 발생
      */
     fun readShort(): Short {
-        return if (readableBytes() >= 2)
+        return if (readableBytes >= 2)
             read().shl(8).or(read()).toShort()
         else
             throw UnderflowException()
@@ -124,7 +117,7 @@ interface ReadBuffer {
      * @throws UnderflowException 버퍼의 데이터가 4 byte 보다 적게 남아있으면 발생
      */
     fun readInt(): Int {
-        return if (readableBytes() >= 4)
+        return if (readableBytes >= 4)
             read().shl(8).or(read()).shl(8).or(read()).shl(8).or(read())
         else
             throw UnderflowException()
@@ -138,7 +131,7 @@ interface ReadBuffer {
      * @throws UnderflowException 버퍼의 데이터가 8 byte 보다 적게 남아있으면 발생
      */
     fun readLong(): Long {
-        return if (readableBytes() >= 8)
+        return if (readableBytes >= 8)
             readInt().toLong().shl(32).or(readInt().toLong().and(0xffffffff))
         else
             throw UnderflowException()
@@ -152,7 +145,7 @@ interface ReadBuffer {
      * @throws UnderflowException 버퍼의 데이터가 4 byte 보다 적게 남아있으면 발생
      */
     fun readFloat(): Float {
-        return if (readableBytes() >= 4)
+        return if (readableBytes >= 4)
             java.lang.Float.intBitsToFloat(readInt())
         else
             throw UnderflowException()
@@ -166,7 +159,7 @@ interface ReadBuffer {
      * @throws UnderflowException 버퍼의 데이터가 8 byte 보다 적게 남아있으면 발생
      */
     fun readDouble(): Double {
-        return if (readableBytes() >= 8)
+        return if (readableBytes >= 8)
             java.lang.Double.longBitsToDouble(readLong())
         else
             throw UnderflowException()
@@ -180,7 +173,7 @@ interface ReadBuffer {
      * @throws UnderflowException 버퍼의 데이터가 2 byte 보다 적게 남아있으면 발생
      */
     fun readChar(): Char {
-        return if (readableBytes() >= 2)
+        return if (readableBytes >= 2)
             readShort().toInt().toChar()
         else
             throw UnderflowException()
@@ -197,7 +190,7 @@ interface ReadBuffer {
      * @throws UnderflowException 버퍼의 데이터가 length 보다 적게 남아있으면 발생
      */
     fun readString(length: Int, charset: Charset = Charsets.UTF_8): String {
-        return if (readableBytes() >= length) {
+        return if (readableBytes >= length) {
             val temp = ByteArray(length)
             read(temp)
             String(temp, charset)
@@ -214,7 +207,7 @@ interface ReadBuffer {
      * @throws UnderflowException 버퍼가 비어있으면 발생
      */
     fun readUByte(): Short {
-        return if (isReadable())
+        return if (isReadable)
             read().toShort()
         else
             throw UnderflowException()
@@ -228,7 +221,7 @@ interface ReadBuffer {
      * @throws UnderflowException 버퍼의 데이터가 2 byte 보다 적게 남아있으면 발생
      */
     fun readUShort(): Int {
-        return if (readableBytes() >= 2)
+        return if (readableBytes >= 2)
             readShort().toInt().and(0xffff)
         else
             throw UnderflowException()
@@ -242,7 +235,7 @@ interface ReadBuffer {
      * @throws UnderflowException 버퍼의 데이터가 4 byte 보다 적게 남아있으면 발생
      */
     fun readUInt(): Long {
-        return if (readableBytes() >= 4)
+        return if (readableBytes >= 4)
             readInt().toLong().and(0xffffffff)
         else
             throw UnderflowException()
@@ -274,21 +267,17 @@ interface ReadBuffer {
 
     /**
      * read 작업을 할 ByteArray를 반환한다.
-     * 반환된 array의 전체를 읽을 수 있는 건 아니다. rOffset() 메소드가 반환하는 위치부터 읽을 수 있는 데이터가 있다.
+     * 반환된 array의 전체를 읽을 수 있는 건 아니다. rOffset속성이 참조하는 위치부터 읽을 수 있는 데이터가 있다.
      * readableBytes()가 반환하는 값이 이 남은 공간의 크기보다 크다면 남은 공간 전체를 읽을 수 있고 그렇지 않다면
      * readableBytes()가 반환하는 값 만큼 읽을 수 있다.
      * readableBytes()가 반환하는 값이 이 남은 공간의 크기보다 크다면 버퍼의 내용을 다 읽어내거 rSkip()한 후에
-     * 다시 이 메소드를 호출하면 그 다음 내용을 담은 array()가 반환된다.
-     * 버퍼가 비어있더라도 array는 반환된다.
-     *
-     * @return read를 위해서 사용할 수 있는 ByteArray를 반환.
+     * 다시 이 속성을 확인하면 그 다음 내용을 담은 ByteArray를 참조하고 있다.
+     * 내용이 없는 상태일 지라도 rArray는 항상 ByteArray를 참조하고 있다.
      */
-    fun rArray(): ByteArray
+    val rArray: ByteArray
 
     /**
-     * rArray() 메소드가 반환하는 ByteArray의 readable한 공간의 시작 offset을 반환한다.
-     *
-     * @return rArray()가 반환하는 ByteArray의 readable 공간의 시작 offset.
+     * rArray의 readable한 공간의 시작 offset을 보여준다.
      */
-    fun rOffset(): Int
+    val rOffset: Int
 }

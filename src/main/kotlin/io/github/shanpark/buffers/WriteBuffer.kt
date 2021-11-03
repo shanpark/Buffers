@@ -7,12 +7,10 @@ interface WriteBuffer {
     /**
      * 현재 버퍼에 write할 수 있는 데이터 공간의 크기(byte 단위)를 얻어온다.
      * 버퍼의 현재 상태에 따른 값이며 구현된 방식에 따라 현재 상태의 일시적인 값이 될 수도 있다.
-     * 예를 들어 동적으로 공간을 확장하도록 구현한다면 무한한 값이 될 수도 있고, 남은 공간을 다 채운 후에
-     * 다시 공간을 할당하면 다시 늘어난 값을 반환할 수 있다.
-     *
-     * @return write할 수 있는 공간의 크기(byte 단위)를 반환.
+     * 예를 들어 동적으로 공간을 확장하도록 구현한다면 현재 구한 값이 작더라도 남은 공간을 다 채운 후에
+     * 다시 공간을 할당하면 다시 늘어난 값이 반환될 수 있다.
      */
-    fun writableBytes(): Int
+    val writableBytes: Int
 
     /**
      * 버퍼에 1 byte의 데이터를 write한다.
@@ -137,20 +135,17 @@ interface WriteBuffer {
     fun wSkip(skipLength: Int)
 
     /**
-     * write 작업을 할 ByteArray를 반환한다.
-     * 반환된 array의 공간을 모두 쓸 수 있는 건 아니다. offset() 메소드가 반환하는 위치부터 array의 끝까지 사용할 수 있다.
+     * write 작업을 할 ByteArray를 참조하는 속성이다.
+     * wArray의 공간을 모두 쓸 수 있는 건 아니다. wOffset 속성이 가리키는 위치부터 array의 끝까지 사용할 수 있다.
      * array를 직접 access하여 데이터를 기록한 후에는 반드시 wSkip() 메소드를 호출하여 write position을 옮겨주어야 한다.
-     * position을 옮긴 후에 다시 wArray() 메소드를 호출하면 추가 공간이 할당되어 반환된다.
      * 이렇게 하지 않으면 다음 write 계열 메소드가 호출되면 다시 그 부분 위에 덮어쓰게된다.
      *
-     * @return write를 위해서 사용할 수 있는 ByteArray를 반환.
+     * 내부 버퍼 공간을 어떻게 구현하느냐에 따라 항상 같은 값이 나오는 것은 아니다.
      */
-    fun wArray(): ByteArray
+    val wArray: ByteArray
 
     /**
-     * wArray() 메소드가 반환하는 ByteArray의 사용 가능한 공간의 시작 offset을 반환한다.
-     *
-     * @return wArray()가 반환하는 ByteArray의 writable 공간의 시작 offset.
+     * wArray의 writable한 공간의 시작 offset을 반환한다.
      */
-    fun wOffset(): Int
+    val wOffset: Int
 }
