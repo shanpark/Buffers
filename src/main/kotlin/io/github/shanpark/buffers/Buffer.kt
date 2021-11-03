@@ -310,7 +310,8 @@ private class Slice(parentBlocks: List<ByteArray>, parentRBlock: Int, parentRInd
         wBlock -= parentRBlock
     }
 
-    override val isReadable = (rBlock < wBlock) || (rIndex < wIndex)
+    override val isReadable: Boolean
+        get() = (rBlock < wBlock) || (rIndex < wIndex)
 
     override val readableBytes: Int
         get() {

@@ -8,7 +8,7 @@ publishing {
         mavenJava(MavenPublication) {
             groupId = 'io.github.shanpark'
             artifactId = 'buffers'
-            version = '0.0.4'
+            version = '0.0.5'
 
             from components.java
         }
