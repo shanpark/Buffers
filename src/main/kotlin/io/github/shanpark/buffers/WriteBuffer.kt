@@ -1,6 +1,7 @@
 package io.github.shanpark.buffers
 
 import io.github.shanpark.buffers.exception.UnderflowException
+import java.io.OutputStream
 import java.nio.charset.Charset
 
 interface WriteBuffer {
@@ -123,6 +124,15 @@ interface WriteBuffer {
      * @throws UnderflowException 버퍼의 데이터가 length 보다 적게 남아있으면 발생
      */
     fun writeString(value: String, charset: Charset = Charsets.UTF_8) = write(value.toByteArray(charset))
+
+    /**
+     * 이 버퍼를 배경으로 동작하는 OutputStream 객체를 반환한다.
+     * 반환된 OutputStream 객체는 이 버퍼의 proxy 정도의 역할이며 반환된 OutputStream 객체를
+     * 통해서 write 작업을 하면 이 버퍼의 write position도 이동된다.
+     *
+     * @return 이 버퍼를 배경으로 동작하는 InputStream 객체.
+     */
+    fun outputStream(): OutputStream
 
     /**
      * write position을 지정된 length 만큼 이동시킨다.

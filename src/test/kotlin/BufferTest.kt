@@ -65,6 +65,7 @@ class BufferTest {
         buffer.mark()
         var readable = buffer.readableBytes
         val slice = buffer.readSlice(8) // 8 ->
+        assertThat(slice.readableBytes).isEqualTo(8)
         assertThat(slice.readLong()).isEqualTo(0xff000102L.shl(32).or(0x03040506L))
         assertThat(buffer.readableBytes).isEqualTo(readable - 8)
         buffer.reset()

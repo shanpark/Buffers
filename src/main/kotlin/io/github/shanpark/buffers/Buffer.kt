@@ -78,6 +78,39 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
         }
     }
 
+    /**
+     * 이 버퍼에서 length 만큼만 읽을 수 있도록 제한된 ReadBuffer를 생성하여 반환한다.
+     * 실제로 데이터의 복사가 일어나지는 않으며 같은 내부 버퍼를 공유한다. 이 버퍼의 read position은 length만큼 이동하게 된다.
+     *
+     * 남아있는 데이터가 length 보다 작으면 IndexOutOfBoundsException이 발생한다.
+     *
+     * @param length 생성된 ReadBuffer로부터 읽고자 하는 데이터의 길이.
+     *
+     * @return 데이터를 읽을 수 있는 ReadBuffer 객체.
+     *
+     * @throws IndexOutOfBoundsException 남아있는 데이터보다 더 많은 데이터를 요청하는 경우 발생.
+     */
+    override fun readSlice(length: Int): ReadBuffer {
+        if (readableBytes >= length) {
+            val slice = Slice(blocks, rBlock, rIndex, length)
+            rSkip(length) // read position 이동.
+            return slice
+        }
+        else
+            throw IndexOutOfBoundsException()
+    }
+
+    /**
+     * 이 버퍼를 배경으로 동작하는 InputStream 객체를 반환한다.
+     * 반환된 InputStream 객체는 이 버퍼의 proxy 정도의 역할이므로 반환된 InputStream 객체를
+     * 통해서 데이터를 읽으면 이 버퍼의 read position도 이동된다.
+     *
+     * @return 이 버퍼를 배경으로 동작하는 InputStream 객체.
+     */
+    override fun inputStream(): InputStream {
+        return BufferInputStream(this)
+    }
+
     override fun rSkip(skipLength: Int) {
         if (readableBytes >= skipLength) {
             var length = skipLength
@@ -141,6 +174,17 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
     override fun write(data: Int) {
         allocBufferIfNeeded()
         blocks[wBlock][wIndex++] = data.toByte()
+    }
+
+    /**
+     * 이 버퍼를 배경으로 동작하는 OutputStream 객체를 반환한다.
+     * 반환된 OutputStream 객체는 이 버퍼의 proxy 정도의 역할이며 반환된 OutputStream 객체를
+     * 통해서 write 작업을 하면 이 버퍼의 write position도 이동된다.
+     *
+     * @return 이 버퍼를 배경으로 동작하는 InputStream 객체.
+     */
+    override fun outputStream(): OutputStream {
+        return BufferOutputStream(this)
     }
 
     override fun wSkip(skipLength: Int) {
@@ -207,50 +251,6 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
         wIndex = 0
 
         invalidateMark()
-    }
-
-    /**
-     * 이 버퍼에서 length 만큼만 읽을 수 있도록 제한된 ReadBuffer를 생성하여 반환한다.
-     * 실제로 데이터의 복사가 일어나지는 않으며 같은 내부 버퍼를 공유한다. 이 버퍼의 read position은 length만큼 이동하게 된다.
-     *
-     * 남아있는 데이터가 length 보다 작으면 IndexOutOfBoundsException이 발생한다.
-     *
-     * @param length 생성된 ReadBuffer로부터 읽고자 하는 데이터의 길이.
-     *
-     * @return 데이터를 읽을 수 있는 ReadBuffer 객체.
-     *
-     * @throws IndexOutOfBoundsException 남아있는 데이터보다 더 많은 데이터를 요청하는 경우 발생.
-     */
-    fun readSlice(length: Int): ReadBuffer {
-        if (readableBytes >= length) {
-            val slice = Slice(blocks, rBlock, rIndex, length)
-            rSkip(length) // read position 이동.
-            return slice
-        }
-        else
-            throw IndexOutOfBoundsException()
-    }
-
-    /**
-     * 이 버퍼를 배경으로 동작하는 InputStream 객체를 반환한다.
-     * 반환된 InputStream 객체는 이 버퍼의 proxy 정도의 역할이므로 반환된 InputStream 객체를
-     * 통해서 데이터를 읽으면 이 버퍼의 read position도 이동된다.
-     *
-     * @return 이 버퍼를 배경으로 동작하는 InputStream 객체.
-     */
-    fun inputStream(): InputStream {
-        return BufferInputStream(this)
-    }
-
-    /**
-     * 이 버퍼를 배경으로 동작하는 OutputStream 객체를 반환한다.
-     * 반환된 OutputStream 객체는 이 버퍼의 proxy 정도의 역할이므로 반환된 OutputStream 객체를
-     * 통해서 write 작업을 하면 이 버퍼의 write position도 이동된다.
-     *
-     * @return 이 버퍼를 배경으로 동작하는 InputStream 객체.
-     */
-    fun outputStream(): OutputStream {
-        return BufferOutputStream(this)
     }
 
     /**
@@ -333,6 +333,32 @@ private class Slice(parentBlocks: List<ByteArray>, parentRBlock: Int, parentRInd
         } else {
             return -1
         }
+    }
+
+    /**
+     * 이 버퍼에서 length 만큼만 읽을 수 있도록 제한된 ReadBuffer를 생성하여 반환한다.
+     * 실제로 데이터의 복사가 일어나지는 않으며 같은 내부 버퍼를 공유한다. 이 버퍼의 read position은 length만큼 이동하게 된다.
+     *
+     * 남아있는 데이터가 length 보다 작으면 IndexOutOfBoundsException이 발생한다.
+     *
+     * @param length 생성된 ReadBuffer로부터 읽고자 하는 데이터의 길이.
+     *
+     * @return 데이터를 읽을 수 있는 ReadBuffer 객체.
+     *
+     * @throws IndexOutOfBoundsException 남아있는 데이터보다 더 많은 데이터를 요청하는 경우 발생.
+     */
+    override fun readSlice(length: Int): ReadBuffer {
+        if (readableBytes >= length) {
+            val slice = Slice(blocks, rBlock, rIndex, length)
+            rSkip(length) // read position 이동.
+            return slice
+        }
+        else
+            throw IndexOutOfBoundsException()
+    }
+
+    override fun inputStream(): InputStream {
+        return BufferInputStream(this)
     }
 
     override fun rSkip(skipLength: Int) {

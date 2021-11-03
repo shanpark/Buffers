@@ -2,6 +2,7 @@ package io.github.shanpark.buffers
 
 import io.github.shanpark.buffers.exception.BufferException
 import io.github.shanpark.buffers.exception.UnderflowException
+import java.io.InputStream
 import java.nio.charset.Charset
 
 interface ReadBuffer {
@@ -240,6 +241,28 @@ interface ReadBuffer {
         else
             throw UnderflowException()
     }
+
+    /**
+     * 이 버퍼에서 length 만큼만 읽을 수 있도록 제한된 ReadBuffer를 생성하여 반환한다.
+     *
+     * 남아있는 데이터가 length 보다 작으면 IndexOutOfBoundsException이 발생한다.
+     *
+     * @param length 생성된 ReadBuffer로부터 읽고자 하는 데이터의 길이.
+     *
+     * @return 데이터를 읽을 수 있는 ReadBuffer 객체.
+     *
+     * @throws IndexOutOfBoundsException 남아있는 데이터보다 더 많은 데이터를 요청하는 경우 발생.
+     */
+    fun readSlice(length: Int): ReadBuffer
+
+    /**
+     * 이 버퍼를 배경으로 동작하는 InputStream 객체를 반환한다.
+     * 반환된 InputStream 객체는 이 버퍼의 proxy 정도의 역할이며 반환된 InputStream 객체를
+     * 통해서 데이터를 읽으면 이 버퍼의 read position도 이동된다.
+     *
+     * @return 이 버퍼를 배경으로 동작하는 InputStream 객체.
+     */
+    fun inputStream(): InputStream
 
     /**
      * read position을 지정된 length 만큼 이동시킨다.
