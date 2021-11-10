@@ -192,7 +192,7 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
         // 이동하는 건 고려하지 않아도 됨.
         val rest = blocks[wBlock].size - wIndex
         if (skipLength <= rest)
-            rIndex += skipLength
+            wIndex += skipLength
         else
             throw IndexOutOfBoundsException()
     }
