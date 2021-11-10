@@ -4,6 +4,7 @@ import io.github.shanpark.buffers.exception.BufferException
 import io.github.shanpark.buffers.exception.UnderflowException
 import java.io.InputStream
 import java.nio.charset.Charset
+import kotlin.math.min
 
 interface ReadBuffer {
     /**
@@ -80,6 +81,25 @@ interface ReadBuffer {
         } else {
             throw IndexOutOfBoundsException()
         }
+    }
+
+    /**
+     * 파라미터로 전달된 WriteBuffer로 이 버퍼의 내용을 모두 읽어서 write한다.
+     *
+     * @param buf 읽은 데이터를 기록할 WriteBuffer
+
+     * @return 실제 읽혀진 byte 수.
+     */
+    fun read(buf: WriteBuffer): Int {
+        var total = 0
+        while (isReadable) {
+            val length = min(min(readableBytes, rArray.size - rOffset), buf.writableBytes)
+            System.arraycopy(rArray, rOffset, buf.wArray, buf.wOffset, length)
+            buf.wSkip(length)
+            rSkip(length)
+            total += length
+        }
+        return total
     }
 
     /**

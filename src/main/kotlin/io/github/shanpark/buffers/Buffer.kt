@@ -150,10 +150,16 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
     }
 
     override val rArray: ByteArray
-        get() = blocks[rBlock]
+        get() {
+            adjustReadPositionIfNeeded()
+            return blocks[rBlock]
+        }
 
     override val rOffset: Int
-        get() = rIndex
+        get() {
+            adjustReadPositionIfNeeded()
+            return rIndex
+        }
 
     /**
      * 현재 버퍼에 write할 수 있는 데이터 공간의 크기(byte 단위)를 얻어온다.
@@ -258,6 +264,19 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
      */
     private fun invalidateMark() {
         markedBlock = -1
+    }
+
+    /**
+     * read position이 현재 array의 끝을 가리키고 있는 경우
+     * 다음 array가 있다면 다음 array의 시작점으로 옮긴다.
+     */
+    private fun adjustReadPositionIfNeeded() {
+        if (isReadable) {
+            if (blocks[rBlock].size == rIndex) {
+                rBlock++
+                rIndex = 0
+            }
+        }
     }
 
     /**
@@ -394,10 +413,29 @@ private class Slice(parentBlocks: List<ByteArray>, parentRBlock: Int, parentRInd
     }
 
     override val rArray: ByteArray
-        get() = blocks[rBlock]
+        get() {
+            adjustReadPositionIfNeeded()
+            return blocks[rBlock]
+        }
 
     override val rOffset: Int
-        get() = rIndex
+        get() {
+            adjustReadPositionIfNeeded()
+            return rIndex
+        }
+
+    /**
+     * read position이 현재 array의 끝을 가리키고 있는 경우
+     * 다음 array가 있다면 다음 array의 시작점으로 옮긴다.
+     */
+    private fun adjustReadPositionIfNeeded() {
+        if (isReadable) {
+            if (blocks[rBlock].size == rIndex) {
+                rBlock++
+                rIndex = 0
+            }
+        }
+    }
 }
 
 /**

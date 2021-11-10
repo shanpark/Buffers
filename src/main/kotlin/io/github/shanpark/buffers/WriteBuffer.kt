@@ -3,6 +3,7 @@ package io.github.shanpark.buffers
 import io.github.shanpark.buffers.exception.UnderflowException
 import java.io.OutputStream
 import java.nio.charset.Charset
+import kotlin.math.min
 
 interface WriteBuffer {
     /**
@@ -36,8 +37,6 @@ interface WriteBuffer {
      * @param offset buf에서 에서 write를 할 데이터의 시작 offset.
      * @param length write할 데이터의 길이.
      *
-     * @return 버퍼에 실제 write가 된 byte 수.
-     *
      * @throws IndexOutOfBoundsException If offset is negative, or length is negative, or offset+length is greater than
      *                                   the size of the array buf, then an IndexOutOfBoundsException is thrown.
      */
@@ -51,6 +50,25 @@ interface WriteBuffer {
         } else {
             throw IndexOutOfBoundsException()
         }
+    }
+
+    /**
+     * 파라미터로 전달된 ReadBuffer 객체의 내용을 모두 읽어서 버퍼로 옮긴다.
+     *
+     * @param buf write할 데이터를 담은 ReadBuffer
+     *
+     * @return 실제 기록된 총 byte 수.
+     */
+    fun write(buf: ReadBuffer): Int {
+        var total = 0
+        while (buf.isReadable) {
+            val length = min(min(buf.readableBytes, (buf.rArray.size - buf.rOffset)), writableBytes)
+            System.arraycopy(buf.rArray, buf.rOffset, wArray, wOffset, length)
+            wSkip(length)
+            buf.rSkip(length)
+            total += length
+        }
+        return total
     }
 
     /**

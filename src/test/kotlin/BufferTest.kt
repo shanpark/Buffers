@@ -80,6 +80,13 @@ class BufferTest {
         ost.write(buf, 1, 1023) // <- 1023
         assertThat(buffer.readableBytes).isEqualTo(readable + 1023)
 
+        val newBuf = Buffer()
+        newBuf.write(buffer)
+        assertThat(newBuf.readableBytes).isEqualTo(readable + 1023)
+
+        newBuf.read(buffer)
+        assertThat(buffer.readableBytes).isEqualTo(readable + 1023)
+
         buffer.clear()
         assertThat(buffer.readableBytes).isEqualTo(0)
     }
