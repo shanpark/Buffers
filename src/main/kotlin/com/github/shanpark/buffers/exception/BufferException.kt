@@ -1,4 +1,4 @@
-package io.github.shanpark.buffers.exception
+package com.github.shanpark.buffers.exception
 
 open class BufferException : RuntimeException {
     constructor() : super() {}

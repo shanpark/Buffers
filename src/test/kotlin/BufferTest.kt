@@ -1,4 +1,4 @@
-import io.github.shanpark.buffers.Buffer
+import com.github.shanpark.buffers.Buffer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test

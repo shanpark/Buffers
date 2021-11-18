@@ -1,6 +1,6 @@
-package io.github.shanpark.buffers
+package com.github.shanpark.buffers
 
-import io.github.shanpark.buffers.exception.UnderflowException
+import com.github.shanpark.buffers.exception.UnderflowException
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.charset.Charset
@@ -299,7 +299,8 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
  *
  * 부모 버퍼가 해제가 되더라도 내부 버퍼에 대한 참조는 따로 가지고 있기 때문에 생성된 Slice 객체는 안전하게 사용가능하다.
  */
-private class Slice(parentBlocks: List<ByteArray>, parentRBlock: Int, parentRIndex: Int, sliceLength: Int) : ReadBuffer {
+private class Slice(parentBlocks: List<ByteArray>, parentRBlock: Int, parentRIndex: Int, sliceLength: Int) :
+    ReadBuffer {
     private val blocks = mutableListOf<ByteArray>()
     private var rBlock: Int = 0
     private var wBlock: Int = parentRBlock

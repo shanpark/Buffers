@@ -1,4 +1,4 @@
-package io.github.shanpark.buffers
+package com.github.shanpark.buffers
 
 interface Clearable {
     /**

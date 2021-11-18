@@ -1,6 +1,6 @@
-package io.github.shanpark.buffers
+package com.github.shanpark.buffers
 
-import io.github.shanpark.buffers.exception.UnderflowException
+import com.github.shanpark.buffers.exception.UnderflowException
 import java.io.OutputStream
 import java.nio.charset.Charset
 import kotlin.math.min

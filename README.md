@@ -1,6 +1,6 @@
 # Buffers
 
-[![](https://jitpack.io/v/shanpark/Buffers.svg)](https://jitpack.io/#shanpark/Buffers)
+[![](https://jitpack.io/v/shanpark/buffers.svg)](https://jitpack.io/#shanpark/buffers)
 
 ## Usage
 
@@ -51,6 +51,6 @@ repositories {
 }
 
 dependencies {
-   implementation 'io.github.shanpark:buffers:0.0.7'
+   implementation 'com.github.shanpark:buffers:0.0.8'
 }
 ```
