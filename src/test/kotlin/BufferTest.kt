@@ -2,6 +2,7 @@ import com.github.shanpark.buffers.Buffer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
+import java.nio.ByteBuffer
 
 class BufferTest {
 
@@ -120,4 +121,28 @@ class BufferTest {
         assertThat(buffer.readUInt()).isEqualTo(0xffffffffL)
         assertThat(buffer.readString(buffer.readableBytes)).isEqualTo("Hello World!")
     }
+
+    @Test
+    @DisplayName("ByteBuffer 데이터 RW 테스트")
+    internal fun byteBufferRWTest() {
+        val byteBuffer = ByteBuffer.allocate(1024)
+        for (inx in 0 until 1024)
+            byteBuffer.put((inx % 0x100).toByte())
+        byteBuffer.flip()
+
+        val buffer = Buffer(1024)
+        buffer.writeInt(0x10203040) // 4
+        buffer.write(byteBuffer) // 4 + 1024
+        assertThat(buffer.readableBytes).isEqualTo(1028)
+
+        assertThat(buffer.readInt()).isEqualTo(0x10203040)
+        assertThat(buffer.readableBytes).isEqualTo(1024)
+
+        byteBuffer.clear()
+        buffer.read(byteBuffer)
+        byteBuffer.flip()
+        for (inx in 0 until 1024)
+            assertThat(byteBuffer.get()).isEqualTo((inx % 0x100).toByte())
+        assertThat(buffer.isReadable).isFalse
+   }
 }

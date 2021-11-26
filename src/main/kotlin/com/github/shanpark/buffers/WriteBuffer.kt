@@ -2,6 +2,7 @@ package com.github.shanpark.buffers
 
 import com.github.shanpark.buffers.exception.UnderflowException
 import java.io.OutputStream
+import java.nio.ByteBuffer
 import java.nio.charset.Charset
 import kotlin.math.min
 
@@ -67,6 +68,26 @@ interface WriteBuffer {
             wSkip(length)
             buf.rSkip(length)
             total += length
+        }
+        return total
+    }
+
+    /**
+     * 파라미터로 전달된 ByteBuffer 객체의 내용을 모두 읽어서 버퍼로 옮긴다.
+     *
+     * @param byteBuffer write할 데이터를 담은 ByteBuffer 객체.
+     *
+     * @return 실제 기록된 총 byte 수.
+     */
+    fun write(byteBuffer: ByteBuffer): Int {
+        var total = 0
+        var remaining = byteBuffer.remaining()
+        while (remaining > 0) {
+            val length = min(writableBytes, remaining)
+            byteBuffer.get(wArray, wOffset, length)
+            wSkip(length)
+            total += length
+            remaining = byteBuffer.remaining()
         }
         return total
     }

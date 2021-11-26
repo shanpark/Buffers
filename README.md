@@ -5,7 +5,8 @@
 ## Usage
 
 ```kotlin
-val buffer = Buffer(1024)
+
+ import java.nio.ByteBufferval buffer = Buffer(1024)
 
 buffer.writeByte(0x12)
 buffer.writeShort(0x1234)
@@ -38,11 +39,22 @@ ostream.write(100)
 // InputStream from Buffer.
 val istream = buffer.inputStream()
 istream.read() // == 100
+
+// ByteBuffer read/write
+val byteBuffer = ByteBuffer.allocate(1024)
+    /* write some data... */
+byteBuffer.flip()
+buffer.write(byteBuffer) // byteBuffer -> buffer
+
+byteBuffer.clear()
+buffer.read(byteBuffer) // buffer -> byteBuffer
 ```
 
 ## Install
 
 To install the library add:
+
+* Gradle
 
 ```gradle
 repositories { 
@@ -51,6 +63,19 @@ repositories {
 }
 
 dependencies {
-   implementation 'com.github.shanpark:buffers:0.0.8'
+   implementation 'com.github.shanpark:buffers:0.0.9'
+}
+```
+
+* Gradle(Kotlin)
+
+```gradle
+repositories { 
+    ...
+    maven { url = uri("https://jitpack.io") }
+}
+
+dependencies {
+    implementation('com.github.shanpark:buffers:0.0.9')
 }
 ```
