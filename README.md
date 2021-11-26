@@ -6,7 +6,9 @@
 
 ```kotlin
 
- import java.nio.ByteBufferval buffer = Buffer(1024)
+import java.nio.ByteBuffer
+
+val buffer = Buffer(1024)
 
 buffer.writeByte(0x12)
 buffer.writeShort(0x1234)
