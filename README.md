@@ -5,7 +5,6 @@
 ## Usage
 
 ```kotlin
-
 import java.nio.ByteBuffer
 
 val buffer = Buffer(1024)
