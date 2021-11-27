@@ -64,7 +64,7 @@ repositories {
 }
 
 dependencies {
-   implementation 'com.github.shanpark:buffers:0.0.9'
+   implementation 'com.github.shanpark:buffers:0.1.0'
 }
 ```
 
@@ -77,6 +77,6 @@ repositories {
 }
 
 dependencies {
-    implementation('com.github.shanpark:buffers:0.0.9')
+    implementation('com.github.shanpark:buffers:0.1.0')
 }
 ```

@@ -330,6 +330,11 @@ interface ReadBuffer {
     fun reset()
 
     /**
+     * 저장된 read position 무효화
+     */
+    fun invalidateMark()
+
+    /**
      * read 작업을 할 ByteArray를 반환한다.
      * 반환된 array의 전체를 읽을 수 있는 건 아니다. rOffset속성이 참조하는 위치부터 읽을 수 있는 데이터가 있다.
      * readableBytes()가 반환하는 값이 이 남은 공간의 크기보다 크다면 남은 공간 전체를 읽을 수 있고 그렇지 않다면

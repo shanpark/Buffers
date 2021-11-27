@@ -149,6 +149,10 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
         }
     }
 
+    override fun invalidateMark() {
+        markedBlock = -1
+    }
+
     override val rArray: ByteArray
         get() {
             adjustReadPositionIfNeeded()
@@ -257,13 +261,6 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
         wIndex = 0
 
         invalidateMark()
-    }
-
-    /**
-     * 저장된 read position 무효화
-     */
-    private fun invalidateMark() {
-        markedBlock = -1
     }
 
     /**
@@ -411,6 +408,10 @@ private class Slice(parentBlocks: List<ByteArray>, parentRBlock: Int, parentRInd
             rBlock = markedBlock
             rIndex = markedIndex
         }
+    }
+
+    override fun invalidateMark() {
+        markedBlock = -1
     }
 
     override val rArray: ByteArray
