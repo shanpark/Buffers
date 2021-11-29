@@ -12,6 +12,15 @@ import kotlin.math.min
  * 내부적으로 여러 ByteArray를 두고 데이터를 저장한다.
  */
 class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable, Clearable {
+    companion object {
+        val EMPTY: Buffer by lazy {
+            val buffer = Buffer(0)
+            buffer.blocks.clear()
+            buffer.blocks.add(ByteArray(0))
+            buffer
+        }
+    }
+
     private val blocks = mutableListOf<ByteArray>()
     private var rBlock: Int = 0
     private var wBlock: Int = 0
@@ -288,6 +297,10 @@ class Buffer(initialCapacity: Int = 1024): ReadBuffer, WriteBuffer, Compactable,
             wIndex = 0
         }
     }
+
+    override fun toString(): String {
+        return "Buffer-{readableBytes=${readableBytes}, rp($rBlock, $rIndex), wp($wBlock, $wIndex), mark($markedBlock, $markedIndex)}"
+    }
 }
 
 /**
@@ -437,6 +450,10 @@ private class Slice(parentBlocks: List<ByteArray>, parentRBlock: Int, parentRInd
                 rIndex = 0
             }
         }
+    }
+
+    override fun toString(): String {
+        return "Slice-{readableBytes=${readableBytes}, rp($rBlock, $rIndex), wp($wBlock, $wIndex), mark($markedBlock, $markedIndex)}"
     }
 }
 

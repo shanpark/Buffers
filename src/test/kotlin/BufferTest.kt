@@ -144,5 +144,13 @@ class BufferTest {
         for (inx in 0 until 1024)
             assertThat(byteBuffer.get()).isEqualTo((inx % 0x100).toByte())
         assertThat(buffer.isReadable).isFalse
-   }
+    }
+
+    @Test
+    @DisplayName("Empty Buffer 테스트")
+    internal fun emptyBuffer() {
+        assertThat(Buffer.EMPTY.isReadable).isFalse
+        val str = Buffer.EMPTY.toString()
+        assertThat(str).isEqualTo("Buffer-{readableBytes=0, rp(0, 0), wp(0, 0), mark(-1, -1)}")
+    }
 }

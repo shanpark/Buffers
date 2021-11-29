@@ -49,6 +49,8 @@ buffer.write(byteBuffer) // byteBuffer -> buffer
 
 byteBuffer.clear()
 buffer.read(byteBuffer) // buffer -> byteBuffer
+
+Buffer.EMPTY // empty buffer instance (singleton)
 ```
 
 ## Install
@@ -64,7 +66,7 @@ repositories {
 }
 
 dependencies {
-   implementation 'com.github.shanpark:buffers:0.1.0'
+   implementation 'com.github.shanpark:buffers:0.1.1'
 }
 ```
 
@@ -77,6 +79,6 @@ repositories {
 }
 
 dependencies {
-    implementation('com.github.shanpark:buffers:0.1.0')
+    implementation('com.github.shanpark:buffers:0.1.1')
 }
 ```
